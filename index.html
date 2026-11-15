@@ -1,0 +1,1694 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CutTrack – Cut Work Tracker</title>
+<script src="cw-store.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style id="pageStyle">@page{size:A4;margin:12mm}</style>
+<style>
+:root{--bg:#f3f4f6;--card:#fff;--ink:#1d2330;--mut:#667085;--line:#e3e6eb;--pri:#1f4e79;--pri2:#e7eef7;--ok:#1a7f4b;--okbg:#e6f4ec;--bad:#b42318;--badbg:#fdecea;--warn:#a15c07;--warnbg:#fff4e0;--r:10px}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--pri);color:#fff;padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+header h1{font-size:19px;margin:0;letter-spacing:.3px}
+header .sub{font-size:12px;opacity:.8}
+header .meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+header input,header select{padding:7px 9px;border-radius:6px;border:0;font-size:13px;width:auto}
+.mode{font-size:11.5px;padding:3px 9px;border-radius:20px;background:#ffffff2b;font-weight:600}
+nav{display:flex;gap:2px;overflow-x:auto;background:#fff;border-bottom:1px solid var(--line);padding:0 8px;position:sticky;top:0;z-index:30}
+nav button{border:0;background:none;padding:13px 14px;font-size:14px;color:var(--mut);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;font-family:inherit}
+nav button.on{color:var(--pri);border-color:var(--pri);font-weight:600}
+main{max-width:1150px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.card h2{font-size:16px;margin:0 0 12px}
+h3.sub{font-size:13px;color:var(--mut);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.5px}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+label.f{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:4px}
+input,select,textarea{font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);width:100%}
+textarea{min-height:70px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--pri);background:var(--pri);color:#fff;padding:9px 14px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn.sec{background:#fff;color:var(--pri)}
+.btn.ok{background:var(--ok);border-color:var(--ok)}
+.btn.bad{background:var(--bad);border-color:var(--bad)}
+.btn.warn{background:var(--warn);border-color:var(--warn)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn.big{padding:14px 20px;font-size:16px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sp{flex:1}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--mut);font-weight:600;background:#fafbfc;position:sticky;top:0;z-index:1}
+td.n,th.n{text-align:right}
+.tw{overflow:auto;max-height:440px;border:1px solid var(--line);border-radius:8px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin-bottom:12px}
+.kpi{background:#fafbfc;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.kpi b{display:block;font-size:22px;line-height:1.2}
+.kpi span{font-size:12px;color:var(--mut)}
+.kpi.ok{background:var(--okbg);border-color:#b7dfc6}.kpi.ok b{color:var(--ok)}
+.kpi.bad{background:var(--badbg);border-color:#f3c1bb}.kpi.bad b{color:var(--bad)}
+.kpi.warn{background:var(--warnbg);border-color:#f5d7a8}.kpi.warn b{color:var(--warn)}
+.tag{display:inline-block;font-size:11.5px;padding:2px 8px;border-radius:20px;font-weight:600;background:#eef1f5;color:var(--mut);white-space:nowrap}
+.tag.ok{background:var(--okbg);color:var(--ok)}.tag.bad{background:var(--badbg);color:var(--bad)}.tag.warn{background:var(--warnbg);color:var(--warn)}.tag.pri{background:var(--pri2);color:var(--pri)}
+.scan{display:grid;gap:10px}
+.cam{width:100%;max-width:440px;border-radius:8px;overflow:hidden;background:#000;display:none}
+.cam.on{display:block}
+.feed{max-height:190px;overflow:auto;font-size:13px}
+.feed div{padding:6px 9px;border-left:4px solid var(--line);margin-bottom:4px;background:#fafbfc;border-radius:4px}
+.feed .ok{border-color:var(--ok)}.feed .bad{border-color:var(--bad);background:var(--badbg);font-weight:600}.feed .warn{border-color:var(--warn);background:var(--warnbg)}.feed .info{border-color:#98a2b3}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer;background:#fff;font-size:13px;font-family:inherit}
+.chip.on{border-color:var(--pri);background:var(--pri2);color:var(--pri);font-weight:600}
+.activebag{font-size:17px;font-weight:700;padding:10px 12px;border-radius:8px;background:var(--pri2);color:var(--pri);margin-bottom:10px}
+.activebag.none{background:var(--warnbg);color:var(--warn)}
+.muted{color:var(--mut);font-size:13px}
+.hidden{display:none!important}
+.verdict{padding:12px 14px;border-radius:8px;font-weight:700;margin-bottom:12px}
+.verdict.ok{background:var(--okbg);color:var(--ok)}.verdict.bad{background:var(--badbg);color:var(--bad)}.verdict.warn{background:var(--warnbg);color:var(--warn)}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:6px;align-items:center}
+#toast div{padding:10px 16px;border-radius:8px;color:#fff;font-weight:600;box-shadow:0 4px 14px #0003;max-width:90vw}
+#flash{position:fixed;inset:0;pointer-events:none;z-index:150;opacity:0}
+#flash.f-ok{background:#1a7f4b;animation:fl .45s}
+#flash.f-bad{background:#b42318;animation:fl2 .9s}
+#flash.f-warn{background:#c77700;animation:fl .6s}
+@keyframes fl{0%{opacity:.22}100%{opacity:0}}
+@keyframes fl2{0%,40%{opacity:.35}100%{opacity:0}}
+.mbg{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:120;padding:14px}
+.mbg.on{display:flex}
+.modal{background:#fff;border-radius:12px;max-width:760px;width:100%;max-height:90vh;overflow:auto;padding:18px}
+.modal h2{margin:0 0 10px;font-size:18px}
+#printArea{display:none}
+/* print */
+.sheet{width:210mm;height:297mm;position:relative;page-break-after:always;overflow:hidden;background:#fff}
+.sheet:last-child{page-break-after:auto}
+.lbl{position:absolute;display:flex;gap:2mm;padding:2mm 2.5mm;align-items:center;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#000}
+.lbl.outline{outline:.2mm dashed #999}
+.lbl .q{flex:none;height:100%;aspect-ratio:1/1}
+.lbl .q svg{width:100%;height:100%;display:block}
+.lbl .t{flex:1;min-width:0;line-height:1.15;overflow:hidden}
+.lbl .a{font-weight:700;font-size:10pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbl .b{font-size:7.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbl .c{font-weight:700;font-size:12.5pt;white-space:nowrap}
+.lbl .code{font-size:5.5pt;font-family:monospace;word-break:break-all;margin-top:.5mm}
+.doc{font-family:Arial,Helvetica,sans-serif;color:#000;font-size:10pt;background:#fff}
+.doc .dh{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px}
+.doc .dt{font-size:17pt;font-weight:700}
+.doc .dq{width:30mm;text-align:center;font-size:8pt;font-family:monospace}
+.doc .dq svg{width:28mm;height:28mm}
+.doc table{border-collapse:collapse;width:100%;margin:4px 0 10px}
+.doc th,.doc td{border:1px solid #888;padding:3px 5px;font-size:9pt;position:static;background:none;color:#000}
+.doc th{background:#eee}
+.doc .kv td{border:0;padding:2px 6px 2px 0;font-size:10pt}
+.doc .tot{font-size:12pt;font-weight:700;margin:6px 0 10px}
+.doc .alert{border:2px solid #000;padding:6px 8px;font-weight:700;margin:8px 0}
+.doc h4{margin:12px 0 3px;font-size:11pt}
+.doc .sig{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:26px;font-size:9pt}
+.doc .sig div{border-top:1px solid #000;padding-top:3px}
+.modal .doc{border:1px solid var(--line);padding:12px;border-radius:8px}
+.chk{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;background:#fff;cursor:pointer}
+.chk input{width:auto}
+.chk.on{border-color:var(--pri);background:var(--pri2)}
+.imp-h{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px 14px;font-size:13.5px;margin-bottom:12px}
+.imp-h span{color:var(--mut);font-size:12px;display:block}
+.checks{margin:0;padding-left:18px;font-size:13.5px}
+.checks li{margin:3px 0}
+.checks .ok{color:var(--ok)}.checks .bad{color:var(--bad)}.checks .warn{color:var(--warn)}
+.lbl .p{font-weight:700;font-size:11pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:.3mm solid #000;margin-top:.6mm;padding-top:.4mm}
+@media print{
+  body{background:#fff}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block}
+}
+@media (max-width:600px){main{padding:10px}.card{padding:12px}nav button{padding:12px 10px}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>CutTrack</h1><div class="sub">Cut work traceability · Cutting → Printer → Sewing</div></div>
+  <div class="meta">
+    <span class="mode" id="modeTag"></span>
+    <input id="meName" placeholder="Your name" style="width:130px">
+    <select id="meStation">
+      <option value="CUT">Cutting / Sorting</option>
+      <option value="PRINT">Printer</option>
+      <option value="SEW">Sewing floor</option>
+    </select>
+    <select id="meParty"></select>
+  </div>
+</header>
+<nav id="nav"></nav>
+<main>
+
+<!-- ============ CUTS ============ -->
+<section id="t-cuts">
+  <div class="card">
+    <h2>New cut — enter the bundle list</h2>
+    <div class="grid">
+      <label class="f">Style *<input id="cStyle"></label>
+      <label class="f">Colour<input id="cColour"></label>
+      <label class="f">Cut no. *<input id="cCut"></label>
+      <label class="f">Order / PO<input id="cOrder"></label>
+      <label class="f">Panel / component<input id="cComp" placeholder="e.g. Fronts"></label>
+      <label class="f">Printer<select id="cPrinter"></select></label>
+    </div>
+    <h3 class="sub">Size breakdown</h3>
+    <div class="row" style="margin-bottom:8px"><label class="f" style="width:160px">Units per bundle<input id="cBq" type="number" min="1"></label></div>
+    <div class="tw" style="max-height:none"><table>
+      <thead><tr><th>Size</th><th>Units cut</th><th>Bundles</th><th></th></tr></thead>
+      <tbody id="cSizes"></tbody></table></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn sec sm" id="cAddSize">+ Add size</button><span class="sp"></span>
+      <span class="muted" id="cPrev"></span>
+      <button class="btn" id="cSave">Create cut & bundles</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Import bundle list</h2>
+    <p class="muted" style="margin-top:0">Drop in the cutting room <b>Bundle list .xlsm</b> as it is — every page sheet is read (PO, job, product, colour, lay, dyelot, size, sobar range, qty, parts and the order size breakdown). Import the same workbook again after more lays are cut and only the new bundles are added.<br>CSV also works — columns: <b>style, colour, cut_no, bundle_no, size, qty</b>; optional: lay, dyelot, order_no, component, printer.</p>
+    <div class="row"><input type="file" id="csvFile" accept=".xlsm,.xlsx,.xls,.csv,text/csv" style="max-width:340px"><button class="btn sec sm" id="csvTpl">CSV template</button></div>
+    <div id="csvPrev" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card">
+    <div class="row"><h2 style="margin:0">Cuts</h2><span class="sp"></span><input id="cutSearch" placeholder="Search style / colour / cut…" style="max-width:240px"></div>
+    <div class="tw" style="margin-top:10px"><table>
+      <thead><tr><th>Job / cut</th><th>Product / style</th><th>Colour</th><th>PO</th><th class="n">Lays</th><th class="n">Bundles</th><th class="n">Units</th><th class="n">Order</th><th>Printer</th><th></th></tr></thead>
+      <tbody id="cutRows"></tbody></table></div>
+  </div>
+</section>
+
+<!-- ============ BAGGING ============ -->
+<section id="t-bag" class="hidden">
+  <div class="card">
+    <h2>Bagging — link bundles to bags</h2>
+    <div class="grid"><label class="f">Cut<select id="bgCut"></select></label></div>
+    <p class="muted" style="margin-bottom:0">Scan a bag label to make it the active bag, then scan every bundle that goes into it.</p>
+  </div>
+  <div id="bgWrap" class="hidden">
+    <div class="card">
+      <div id="bgTop"></div>
+      <div class="row" style="margin-top:12px">
+        <label class="row muted" style="gap:6px">New bags <input type="number" id="bgN" value="1" min="1" max="50" style="width:70px"></label>
+        <button class="btn sm" id="bgNew">Create & print bag labels</button>
+        <button class="btn sec sm" id="bgReprint">Reprint bag labels</button>
+        <button class="btn sec sm" id="bgBl">Print bundle labels</button>
+      </div>
+    </div>
+    <div class="card"><h2>Scan</h2><div id="bgActive" class="activebag none"></div><div data-scan="bg"></div></div>
+    <div class="card">
+      <div class="row"><h2 style="margin:0">Bundle list</h2><span class="sp"></span>
+        <label class="row muted" style="gap:6px"><input type="checkbox" id="bgOnlyUn" style="width:auto">Unbagged only</label>
+        <button class="btn sec sm" id="bgCheck">Check for short bundles</button></div>
+      <div id="bgList" style="margin-top:10px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DISPATCH ============ -->
+<section id="t-dispatch" class="hidden">
+  <div class="card">
+    <h2>Dispatch & delivery note</h2>
+    <div class="grid">
+      <label class="f">Movement<select id="dLeg"><option value="CUT_TO_PRINT">Cutting → Printer</option><option value="PRINT_TO_SEW">Printer → Sewing</option></select></label>
+      <label class="f">From<select id="dFrom"></select></label>
+      <label class="f">To<select id="dTo"></select></label>
+      <label class="f">Add cut<span class="row" style="flex-wrap:nowrap"><select id="dCutSel"></select><button class="btn sec sm" id="dAddCut">Add</button></span></label>
+    </div>
+    <p class="muted" style="margin-bottom:0">Add cuts here, or just start scanning — the first bag or bundle of a cut adds it to the delivery.</p>
+  </div>
+  <div class="card"><h2>Scan bags & bundles</h2><div data-scan="d"></div></div>
+  <div id="dBody"></div>
+</section>
+
+<!-- ============ RECEIVE ============ -->
+<section id="t-receive" class="hidden">
+  <div class="card">
+    <h2>Receive work</h2>
+    <p class="muted" style="margin-top:0">Scan the QR on the delivery note, or pick it below. Then scan every bag and bundle.</p>
+    <div id="rPending"></div>
+  </div>
+  <div class="card">
+    <h2>Scan</h2>
+    <label class="row muted" style="gap:6px;margin-bottom:8px"><input type="checkbox" id="rBagAll" style="width:auto"> Scanning a bag confirms all the bundles inside it (faster, less strict)</label>
+    <div data-scan="r"></div>
+  </div>
+  <div id="rBody"></div>
+</section>
+
+<!-- ============ DELIVERIES ============ -->
+<section id="t-deliveries" class="hidden">
+  <div class="card">
+    <div class="row"><h2 style="margin:0">Delivery notes</h2><span class="sp"></span>
+      <select id="dlLeg" style="width:auto"><option value="">All movements</option><option value="CUT_TO_PRINT">Cutting → Printer</option><option value="PRINT_TO_SEW">Printer → Sewing</option></select>
+      <select id="dlSt" style="width:auto"><option value="">All statuses</option><option value="DISPATCHED">In transit</option><option value="RECEIVED_COMPLETE">Received complete</option><option value="RECEIVED_SHORT">Received short</option></select>
+      <input id="dlQ" placeholder="Search DN / style / location" style="max-width:220px">
+    </div>
+    <div class="tw" style="margin-top:10px;max-height:640px"><table>
+      <thead><tr><th>DN</th><th>Date</th><th>Movement</th><th>From → To</th><th>Cuts</th><th class="n">Sent</th><th class="n">Rcvd</th><th>Status</th><th></th></tr></thead>
+      <tbody id="dlRows"></tbody></table></div>
+  </div>
+</section>
+
+<!-- ============ RECON ============ -->
+<section id="t-recon" class="hidden">
+  <div class="card">
+    <h2>Job reconciliation</h2>
+    <p class="muted" style="margin-top:0">Cut → bagged → dispatched → received, for every part of every bundle — and where anything unaccounted for was last seen.</p>
+    <div class="row"><select id="rcCut" style="max-width:440px"></select><button class="btn" id="rcGo">Show recon</button></div>
+  </div>
+  <div id="rcBody"></div>
+  <div class="card"><h2>Open investigations & problem deliveries</h2><div id="rcIssues"></div></div>
+</section>
+
+<!-- ============ SETTINGS ============ -->
+<section id="t-sorting" class="hidden">
+  <div class="card">
+    <div class="row"><h2 style="margin:0">Sorting — live</h2><span class="muted" id="soUpd"></span><span class="sp"></span>
+      <a class="btn sec sm" href="sorter.html" target="_blank" rel="noopener">Open Sorter app ↗</a><button class="btn sec sm" id="soRef">Refresh</button></div>
+    <p class="muted" style="margin-bottom:0">Today's activity from the Sorter app. Refreshes every 15 seconds while this tab is open.</p>
+  </div>
+  <div id="soBody"></div>
+</section>
+
+<section id="t-dispatchboard" class="hidden">
+  <div class="card">
+    <div class="row"><h2 style="margin:0">Dispatch board</h2><span class="muted" id="dbUpd"></span><span class="sp"></span>
+      <a class="btn sec sm" href="dispatch.html" target="_blank" rel="noopener">Open Dispatch app ↗</a><button class="btn sec sm" id="dbRef">Refresh</button></div>
+    <p class="muted" style="margin-bottom:0">Bags ready to go, loads dispatched today, and the balance still to follow per job. Refreshes every 30 seconds while open.</p>
+  </div>
+  <div id="dbBody"></div>
+</section>
+
+<section id="t-receiving" class="hidden">
+  <div class="card">
+    <div class="row"><h2 style="margin:0">Receiving — sewing floor</h2><span class="sp"></span>
+      <a class="btn sec sm" href="receive.html" target="_blank" rel="noopener">Open Receiving app ↗</a><button class="btn sec sm" id="rvRef">Refresh</button></div>
+    <p class="muted" style="margin-bottom:0">Receipts, quarantine, open investigations and what is still out at the printers. Refreshes every 30 seconds while open.</p>
+  </div>
+  <div id="rvBody"></div>
+</section>
+
+<section id="t-settings" class="hidden">
+  <div class="card">
+    <h2>Database</h2>
+    <p class="muted" style="margin-top:0" id="sDbInfo"></p>
+    <div class="row"><button class="btn sec" id="sTest">Check connection</button><span id="sMsg" class="muted"></span></div>
+  </div>
+  <div class="card"><h2>Locations</h2><div class="grid" id="sParties"></div></div>
+  <div class="card">
+    <h2>Staff — sorters, dispatchers, receiving clerks & supervisors</h2>
+    <p class="muted" style="margin-top:0">Everyone who signs in to the Sorter app, each with their own 4–6 digit PIN. A supervisor PIN clears wrong-job alarms and reopens closed bags. Changes need a supervisor PIN (not needed for the very first supervisor).</p>
+    <div id="stList"></div>
+    <div class="grid" style="margin-top:10px">
+      <label class="f">Name<input id="stN"></label>
+      <label class="f">Role<select id="stR"><option value="SORTER">Sorter</option><option value="DISPATCHER">Dispatcher</option><option value="RECEIVER">Receiving clerk</option><option value="SUPERVISOR">Supervisor</option></select></label>
+      <label class="f">PIN (new or changed)<input id="stP" inputmode="numeric" maxlength="6" type="password"></label>
+      <label class="f">Your supervisor PIN<input id="stA" inputmode="numeric" maxlength="6" type="password"></label>
+    </div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="stSave">Save person</button><span class="muted" id="stMsg"></span></div>
+  </div>
+  <div class="card">
+    <h2>Bag labels</h2>
+    <p class="muted" style="margin-top:0">Generic, pre-numbered bag labels (BAG-000123). Any sorter can use any label: the first bundle scanned in locks the bag to that job and dyelot. Numbers are never reused.</p>
+    <div class="row"><label class="row muted" style="gap:6px">New labels <input id="blN" type="number" min="1" max="2000" value="48" style="width:90px"></label><button class="btn" id="blGo">Reserve numbers & print</button></div>
+    <div class="row" style="margin-top:10px"><label class="row muted" style="gap:6px">Reprint from <input id="blF" type="number" min="1" style="width:100px"></label><label class="row muted" style="gap:6px">to <input id="blT" type="number" min="1" style="width:100px"></label><button class="btn sec" id="blRe">Reprint</button></div>
+  </div>
+  <div class="card">
+    <h2>Labels & defaults</h2>
+    <div class="grid"><label class="f">Default label sheet<select id="sLayout"></select></label><label class="f">Default units per bundle<input id="sBq" type="number" min="1"></label></div>
+    <div class="row" style="margin-top:10px"><button class="btn sec" id="sTestLbl">Print alignment test sheet</button></div>
+  </div>
+  <div class="card" id="sDemo">
+    <h2>Demo data</h2>
+    <p class="muted" style="margin-top:0">Try the full flow on one device before connecting a database.</p>
+    <div class="row"><button class="btn sec" id="sSample">Load sample cuts</button><button class="btn bad" id="sClear">Clear demo data</button></div>
+  </div>
+</section>
+</main>
+
+<div class="mbg" id="mbg"><div class="modal" id="mbody"></div></div>
+<div id="toast"></div>
+<div id="flash"></div>
+<div id="printArea"></div>
+
+<script>
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&3|8)).toString(16); }));
+const now = () => new Date().toISOString();
+const pad = (n, l) => String(n).padStart(l, '0');
+const fmtD = d => d ? new Date(d).toLocaleString('en-ZA', {dateStyle:'medium', timeStyle:'short'}) : '';
+const sumQ = a => a.reduce((s, b) => s + (+b.qty || 0), 0);
+const group = (a, k) => a.reduce((m, x) => ((m[x[k]] = m[x[k]] || []).push(x), m), {});
+const uniq = a => [...new Set(a)];
+const csvLine = a => a.map(v => { v = String(v ?? ''); return /[",\n;]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(',');
+function download(name, text, type = 'text/csv') { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], {type})); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); }
+
+const DEF = { layout: 'L7160', bundleQty: 20 };
+let CFG = Object.assign({}, DEF, JSON.parse(localStorage.getItem('cw_cfg') || '{}'));
+const saveCfg = () => localStorage.setItem('cw_cfg', JSON.stringify(CFG));
+let ME = Object.assign({ name: '', station: 'CUT', party: '' }, JSON.parse(localStorage.getItem('cw_me') || '{}'));
+const saveMe = () => localStorage.setItem('cw_me', JSON.stringify(ME));
+const me = () => ME.name || 'Unknown';
+
+const LEGS = {
+  CUT_TO_PRINT: { name: 'Cutting → Printer', src: 'CUTTING', transit: 'TRANSIT_PRINT', dest: 'PRINTER', short: 'SHORT_AT_PRINTER', fromKind: 'CUTTING', toKind: 'PRINTER' },
+  PRINT_TO_SEW: { name: 'Printer → Sewing', src: 'PRINTER', transit: 'TRANSIT_SEW', dest: 'SEWING', short: 'SHORT_AT_SEWING', fromKind: 'PRINTER', toKind: 'SEWING' }
+};
+const LAYOUTS = {
+  P16:   { name: '16 per sheet — 2×8, 102×35.75mm (same as current Word part stickers)', cols: 2, rows: 8, w: 102, h: 35.75, top: .5, left: 2, gx: 0, gy: 0 },
+  L7160: { name: '21 per sheet — 3×7, 63.5×38.1mm (Avery L7160)', cols: 3, rows: 7, w: 63.5, h: 38.1, top: 15.15, left: 7.21, gx: 2.54, gy: 0 },
+  A24:   { name: '24 per sheet — 3×8, 70×37mm', cols: 3, rows: 8, w: 70, h: 37, top: .5, left: 0, gx: 0, gy: 0 },
+  L7163: { name: '14 per sheet — 2×7, 99.1×38.1mm (Avery L7163)', cols: 2, rows: 7, w: 99.1, h: 38.1, top: 15.15, left: 4.65, gx: 2.5, gy: 0 },
+  L7165: { name: '8 per sheet — 2×4, 99.1×67.7mm (Avery L7165)', cols: 2, rows: 4, w: 99.1, h: 67.7, top: 13.1, left: 4.65, gx: 2.5, gy: 0 }
+};
+
+/* ---------- data store: see cw-store.js (Cloudflare D1 via /api, or demo mode in this browser) ---------- */
+const DEMO_STAFF = () => [{ id: uid(), name: 'Receiver', role: 'RECEIVER', pin: '4444', active: true }, { id: uid(), name: 'Dispatcher', role: 'DISPATCHER', pin: '3333', active: true }, { id: uid(), name: 'Sorter 1', role: 'SORTER', pin: '1111', active: true }, { id: uid(), name: 'Sorter 2', role: 'SORTER', pin: '2222', active: true }, { id: uid(), name: 'Supervisor', role: 'SUPERVISOR', pin: '9999', active: true }];
+
+/* ---------- caches ---------- */
+let PARTIES = [], CUTS = [];
+const partiesOf = k => PARTIES.filter(p => p.kind === k).map(p => p.name);
+async function loadParties() { PARTIES = await Store.list('cw_parties', {}, { order: 'name', asc: true }); }
+async function loadCuts() { CUTS = await Store.list('cw_cuts', {}, { order: 'created_at', limit: 1500 }); CUTS.forEach(c => { c.parts = c.parts || []; c.print_parts = c.print_parts || []; c.order_sizes = c.order_sizes || {}; }); }
+async function getCut(id) { let c = CUTS.find(x => x.id === id); if (!c) { c = await Store.one('cw_cuts', { id }); if (c) { c.parts = c.parts || []; c.print_parts = c.print_parts || []; c.order_sizes = c.order_sizes || {}; CUTS.push(c); } } return c; }
+const cutTag = c => c.job_no ? `Job ${c.job_no}` : `Cut ${c.cut_no}`;
+const cutName = c => c ? `${c.style}${c.colour ? ' · ' + c.colour : ''} · ${cutTag(c)}` : '?';
+const layTxt = b => [b.lay_no ? 'Lay ' + b.lay_no : '', b.dyelot ? 'Dye ' + b.dyelot : ''].filter(Boolean).join(' · ');
+const rangeTxt = b => b.sobar_from ? `${b.sobar_from}–${b.sobar_to}` : '';
+/* a part sticker QR = bundle code + -Pnn; any part sticker identifies its bundle */
+function parseCode(code) { const m = /^(BDL-.+)-P(\d{1,3})$/.exec(code); return m ? { code: m[1], part: +m[2] } : { code, part: null }; }
+const partName = (cut, no) => ((cut && cut.parts) || []).find(p => p.no === no)?.name || ('Part ' + no);
+function partNote(cut, part) {
+  if (!part || !cut) return '';
+  const pp = cut.print_parts || [];
+  return pp.length && !pp.includes(part) ? ` — ⚠ ${partName(cut, part)} sticker: this part does not go to the printer, keep it out of the bag` : '';
+}
+const bagShort = code => code ? 'BAG ' + code.split('-').pop() : '—';
+function locText(b) {
+  return ({ CUTTING: 'at cutting', TRANSIT_PRINT: `in transit to ${b.holder}`, PRINTER: `at ${b.holder}`, TRANSIT_SEW: `in transit to ${b.holder}`, SEWING: `on ${b.holder}`, SHORT_AT_PRINTER: `missing (short at ${b.holder})`, SHORT_AT_SEWING: `missing (short at ${b.holder})`, MISSING: `MISSING (last sent to ${b.holder})` })[b.location] || b.location;
+}
+function statusTag(d) {
+  if (d.status === 'CANCELLED') return '<span class="tag">Cancelled</span>';
+  let s = d.status === 'DISPATCHED' ? `<span class="tag pri">${d.leg === 'CUT_TO_PRINT' ? 'At printer' : 'In transit'}</span>` : d.status === 'RECEIVED_COMPLETE' ? '<span class="tag ok">Received complete</span>' : '<span class="tag bad">Received short</span>';
+  if (d.dispatched_short) s += ' <span class="tag warn">Sent short</span>';
+  if (d.wrong_count > 0) s += ` <span class="tag bad">${d.wrong_count} wrong</span>`;
+  return s;
+}
+const statusText = d => d.status === 'CANCELLED' ? 'CANCELLED' : d.status === 'DISPATCHED' ? (d.leg === 'CUT_TO_PRINT' ? 'Dispatched — at printer' : 'In transit') : d.status === 'RECEIVED_COMPLETE' ? 'Received complete' : 'Received SHORT';
+
+/* ---------- feedback: toast, beep, flash, feed ---------- */
+function toast(msg, kind = 'ok', ms = 2600) {
+  const d = document.createElement('div'); d.textContent = msg;
+  d.style.background = kind === 'bad' ? 'var(--bad)' : kind === 'warn' ? '#b26a00' : kind === 'info' ? '#344054' : 'var(--ok)';
+  $('#toast').appendChild(d); setTimeout(() => d.remove(), ms);
+}
+let AC;
+function beep(k) {
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const seq = k === 'ok' ? [[1046, .09]] : k === 'bad' ? [[220, .32], [170, .38]] : k === 'warn' ? [[660, .12], [520, .14]] : [[780, .06]];
+    let t = AC.currentTime;
+    seq.forEach(([f, d]) => { const o = AC.createOscillator(), g = AC.createGain(); o.type = k === 'bad' ? 'square' : 'sine'; o.frequency.value = f; g.gain.value = .13; o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d); t += d + .03; });
+  } catch (e) {}
+  if (k === 'bad' && navigator.vibrate) navigator.vibrate([250, 100, 250]);
+}
+function flash(k) { if (k === 'info') return; const f = $('#flash'); f.className = ''; void f.offsetWidth; f.className = 'f-' + k; }
+function feed(p, msg, kind) {
+  const f = $(`#${p}-feed`); if (!f) return;
+  const d = document.createElement('div'); d.className = kind;
+  d.innerHTML = `<span class="muted">${new Date().toLocaleTimeString('en-ZA')}</span> ${esc(msg)}`;
+  f.prepend(d); while (f.children.length > 50) f.lastChild.remove();
+}
+function say(p, msg, kind = 'ok') { feed(p, msg, kind); beep(kind); flash(kind); if (kind === 'bad') toast(msg, 'bad', 4500); }
+function needName() { if (!ME.name.trim()) { toast('Enter your name at the top first', 'bad'); $('#meName').focus(); return false; } return true; }
+
+/* ---------- modal ---------- */
+function openModal(html) { $('#mbody').innerHTML = html; $('#mbg').classList.add('on'); }
+function closeModal() { $('#mbg').classList.remove('on'); }
+function ask({ title, html, buttons, onOpen }) {
+  return new Promise(res => {
+    openModal(`<h2>${title}</h2>${html}<div class="row" style="justify-content:flex-end;margin-top:16px">${buttons.map((b, i) => `<button class="btn ${b.cls || ''}" data-i="${i}">${b.label}</button>`).join('')}</div>`);
+    if (onOpen) onOpen();
+    $$('#mbody [data-i]').forEach(el => el.onclick = () => {
+      const b = buttons[+el.dataset.i];
+      if (b.check && !b.check()) return;
+      const v = typeof b.val === 'function' ? b.val() : b.val;
+      closeModal(); res(v);
+    });
+  });
+}
+
+/* ---------- QR + printing ---------- */
+function qrSvg(text) {
+  const q = qrcode(0, 'M'); q.addData(text); q.make();
+  const n = q.getModuleCount(); let d = '';
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c},${r}h1v1h-1z`;
+  return `<svg viewBox="-3 -3 ${n + 6} ${n + 6}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect x="-3" y="-3" width="${n + 6}" height="${n + 6}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+}
+function doPrint(html, mode) {
+  $('#pageStyle').textContent = mode === 'labels' ? '@page{size:A4;margin:0}' : '@page{size:A4;margin:12mm}';
+  $('#printArea').innerHTML = html;
+  setTimeout(() => window.print(), 250);
+}
+function labelSheets(labels, key, start = 1, outline = false) {
+  const L = LAYOUTS[key] || LAYOUTS.L7160, per = L.cols * L.rows;
+  const all = Array(Math.max(0, start - 1)).fill(null).concat(labels);
+  let out = '';
+  for (let s = 0; s < all.length; s += per) {
+    out += '<div class="sheet">';
+    all.slice(s, s + per).forEach((lb, i) => {
+      if (!lb) return;
+      const c = i % L.cols, r = Math.floor(i / L.cols);
+      const x = L.left + c * (L.w + L.gx), y = L.top + r * (L.h + L.gy);
+      out += `<div class="lbl${outline ? ' outline' : ''}" style="left:${x}mm;top:${y}mm;width:${L.w}mm;height:${L.h}mm"><div class="q"${lb.q ? ` style="height:auto;width:${lb.q}"` : ''}>${qrSvg(lb.code)}</div><div class="t">${lb.html}<div class="code">${esc(lb.code)}</div></div></div>`;
+    });
+    out += '</div>';
+  }
+  return out;
+}
+async function printLabels(labels, what, defLayout) {
+  if (!labels.length) return toast('No labels to print', 'bad');
+  const r = await ask({
+    title: `Print ${labels.length} ${what}`,
+    html: `<div class="grid"><label class="f">Label sheet<select id="plL">${Object.entries(LAYOUTS).map(([k, l]) => `<option value="${k}" ${k === (defLayout || CFG.layout) ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}</select></label>
+      <label class="f">Start at label position<input id="plS" type="number" min="1" value="1"></label></div>
+      <p class="muted">Use “start at position” to finish a part-used sheet. Print at 100% / “Actual size”, no scaling.</p>`,
+    buttons: [{ label: 'Cancel', val: null, cls: 'sec' }, { label: 'Print', val: () => ({ l: $('#plL').value, s: Math.max(1, +$('#plS').value || 1) }) }]
+  });
+  if (!r) return;
+  doPrint(labelSheets(labels, r.l, r.s), 'labels');
+}
+function bundleLabel(cut, b) {
+  const l2 = [cut.po_no ? 'PO ' + cut.po_no : '', cutTag(cut)].filter(Boolean).join(' · ');
+  return { code: b.code, html: `<div class="a">${esc(cut.style)} · ${esc(cut.colour || '')}</div><div class="b">${esc(l2)}</div><div class="c">#${b.bundle_no} · Sz ${esc(b.size)} · ${b.qty}u</div><div class="b">${esc([layTxt(b), rangeTxt(b) ? 'Rng ' + rangeTxt(b) : ''].filter(Boolean).join(' · ') || (b.component || cut.component || ''))}</div>` };
+}
+/* one sticker per part per bundle — same info as the current Word labels, plus a QR */
+function partLabel(cut, b, p) {
+  return { code: `${b.code}-P${pad(p.no, 2)}`, html: `<div class="b">PO ${esc(cut.po_no || '')} · ${esc(cutTag(cut))}</div><div class="c">#${b.bundle_no} · Sz ${esc(b.size)} · ${b.qty}u</div><div class="b">${esc(layTxt(b))}${rangeTxt(b) ? ' · Rng ' + rangeTxt(b) : ''}</div><div class="p">${esc(p.name)}</div>` };
+}
+function bagLabel(cut, bag) {
+  return { code: bag.code, html: `<div class="c">BAG ${pad(bag.bag_no, 2)}</div><div class="a">${esc(cut.style)}</div><div class="b">${esc(cut.colour || '')}${cut.colour ? ' · ' : ''}${esc(cutTag(cut))}</div><div class="b">${cut.po_no ? 'PO ' + esc(cut.po_no) : esc(cut.component || '')}</div>` };
+}
+async function printBundleLabels(cut, preset) {
+  const bs = await Store.list('cw_bundles', { cut_id: cut.id }, { order: 'bundle_no', asc: true });
+  const parts = cut.parts || [];
+  if (!parts.length) return printLabels(bs.map(b => bundleLabel(cut, b)), 'bundle labels');
+  const lays = uniq(bs.map(b => b.lay_no).filter(Boolean));
+  const pp = cut.print_parts || [];
+  const r = await ask({
+    title: `Labels — ${esc(cutName(cut))}`,
+    html: `<label class="f">Label type<select id="lbT"><option value="part">Part stickers — one per part per bundle (replaces the Word labels)</option><option value="bundle">Bundle tickets — one per bundle</option></select></label>
+      <div id="lbPW"><h3 class="sub">Parts to print</h3><div class="chips">${parts.map(p => `<label class="chk on"><input type="checkbox" class="lbP" value="${p.no}" checked> ${p.no}. ${esc(p.name)}${pp.length && pp.includes(p.no) ? ' 🖨' : ''}</label>`).join('')}</div>
+      ${pp.length ? '<p class="muted">🖨 = goes to the printer. <a href="#" id="lbOnlyP">Select printer parts only</a></p>' : ''}</div>
+      ${lays.length > 1 ? `<h3 class="sub">Lays</h3><div class="chips">${lays.map(l => `<label class="chk on"><input type="checkbox" class="lbL" value="${esc(l)}" checked> Lay ${esc(l)}</label>`).join('')}</div>` : ''}
+      <p class="muted" id="lbN"></p>`,
+    buttons: [{ label: 'Cancel', val: null, cls: 'sec' }, { label: 'Next', val: () => ({ t: $('#lbT').value, parts: $$('.lbP:checked').map(i => +i.value), lays: lays.length > 1 ? $$('.lbL:checked').map(i => i.value) : null }) }],
+    onOpen: () => {
+      const upd = () => {
+        $('#lbPW').classList.toggle('hidden', $('#lbT').value !== 'part');
+        $$('#mbody .chk').forEach(l => l.classList.toggle('on', l.querySelector('input').checked));
+        const nb = lays.length > 1 ? bs.filter(b => $$('.lbL:checked').some(i => i.value === String(b.lay_no))).length : bs.length;
+        $('#lbN').textContent = $('#lbT').value === 'part' ? `${nb} bundles × ${$$('.lbP:checked').length} parts = ${nb * $$('.lbP:checked').length} stickers` : `${nb} bundle tickets`;
+      };
+      $$('#mbody input,#mbody select').forEach(i => i.onchange = upd);
+      if ($('#lbOnlyP')) $('#lbOnlyP').onclick = e => { e.preventDefault(); $$('.lbP').forEach(i => i.checked = pp.includes(+i.value)); upd(); };
+      if (preset === 'part') $('#lbT').value = 'part';
+      upd();
+    }
+  });
+  if (!r) return;
+  const sel = r.lays ? bs.filter(b => r.lays.includes(String(b.lay_no))) : bs;
+  if (r.t === 'bundle') return printLabels(sel.map(b => bundleLabel(cut, b)), 'bundle tickets', 'L7160');
+  const ps = parts.filter(p => r.parts.includes(p.no));
+  if (!ps.length) return toast('Select at least one part', 'bad');
+  printLabels(sel.flatMap(b => ps.map(p => partLabel(cut, b, p))), 'part stickers', 'P16');
+}
+
+/* ---------- camera scanner ---------- */
+const Scanner = {
+  inst: null, cur: null, cb: null, last: '', lastT: 0,
+  async start(p, cb) {
+    await this.stop();
+    this.cur = p; this.cb = cb;
+    try {
+      this.inst = new Html5Qrcode(p + '-cam');
+      await this.inst.start({ facingMode: 'environment' }, { fps: 12, qrbox: (w, h) => { const s = Math.floor(Math.min(w, h) * .7); return { width: s, height: s }; } }, t => this.hit(t), () => {});
+      $(`#${p}-camBtn`).textContent = '■ Stop camera';
+    } catch (e) { this.inst = null; this.cur = null; $(`#${p}-cam`).classList.remove('on'); throw e; }
+  },
+  async stop() {
+    if (this.inst) { try { await this.inst.stop(); } catch (e) {} try { this.inst.clear(); } catch (e) {} this.inst = null; }
+    if (this.cur) { $(`#${this.cur}-cam`).classList.remove('on'); $(`#${this.cur}-camBtn`).textContent = '📷 Start camera'; }
+    this.cur = null;
+  },
+  hit(t) { t = (t || '').trim(); const n = Date.now(); if (t === this.last && n - this.lastT < 2500) return; this.last = t; this.lastT = n; this.cb && this.cb(t); }
+};
+let scanQ = Promise.resolve();
+function bindScan(p, handler) {
+  const box = $(`[data-scan="${p}"]`);
+  box.innerHTML = `<div class="scan"><div class="row"><button class="btn" id="${p}-camBtn">📷 Start camera</button><input id="${p}-man" placeholder="Type a code and press Enter" style="flex:1;min-width:180px"></div><div id="${p}-cam" class="cam"></div><div class="feed" id="${p}-feed"></div></div>`;
+  const run = code => { code = (code || '').trim().toUpperCase(); if (!code) return; scanQ = scanQ.then(() => handler(code)).catch(e => { console.error(e); say(p, e.message || String(e), 'bad'); }); };
+  $(`#${p}-man`).addEventListener('keydown', e => { if (e.key === 'Enter') { run(e.target.value); e.target.value = ''; } });
+  $(`#${p}-camBtn`).onclick = async () => {
+    if (Scanner.cur === p) return Scanner.stop();
+    $(`#${p}-cam`).classList.add('on');
+    try { await Scanner.start(p, run); } catch (e) { toast('Camera not available: ' + (e.message || e), 'bad', 5000); }
+  };
+}
+
+/* ---------- select helper ---------- */
+function fillSelect(el, vals, lab = v => v, sel) {
+  const cur = sel ?? el.value;
+  el.innerHTML = vals.map(v => `<option value="${esc(v)}">${esc(lab(v))}</option>`).join('');
+  if (vals.includes(cur)) el.value = cur;
+}
+const cutOptions = (el, sel, blank = '— select cut —') => fillSelect(el, ['', ...CUTS.map(c => c.id)], id => id ? cutName(CUTS.find(c => c.id === id)) : blank, sel);
+
+/* =====================================================================
+   CUTS
+   ===================================================================== */
+const clean = s => String(s || '').toUpperCase().replace(/\s+/g, '').replace(/[^A-Z0-9-]/g, '');
+const mkRef = (style, colour, cut) => clean([style, colour, 'C' + cut].filter(Boolean).join('-'));
+const jobRef = (job, colour) => clean([job, colour].filter(Boolean).join('-'));
+const bundleRow = (ref, cutId, h, b) => ({ code: `BDL-${ref}-${pad(b.bundle_no, 3)}`, cut_id: cutId, bundle_no: b.bundle_no, size: String(b.size), qty: b.qty, component: b.component || h.component || '', lay_no: b.lay_no != null && b.lay_no !== '' ? String(b.lay_no) : null, dyelot: b.dyelot != null && b.dyelot !== '' ? String(b.dyelot) : null, sobar_from: b.sobar_from || null, sobar_to: b.sobar_to || null, bag_code: null, location: 'CUTTING', holder: null });
+async function createCut(h, bundles) {
+  const ref = h.cut_ref || mkRef(h.style, h.colour, h.cut_no);
+  if (await Store.one('cw_cuts', { cut_ref: ref })) throw new Error(`${ref} already exists`);
+  const [cut] = await Store.insert('cw_cuts', [{ cut_ref: ref, style: h.style, colour: h.colour || '', cut_no: String(h.cut_no), order_no: h.order_no || '', component: h.component || '', printer: h.printer || '', total_bundles: bundles.length, total_units: sumQ(bundles), created_by: me(),
+    po_no: h.po_no || null, job_no: h.job_no || null, layer_up: h.layer_up || null, order_total: h.order_total || null, parts: h.parts || [], print_parts: h.print_parts || [], order_sizes: h.order_sizes || {}, source: h.source || 'manual' }]);
+  await Store.insert('cw_bundles', bundles.map(b => bundleRow(ref, cut.id, h, b)));
+  return cut;
+}
+/* re-import of a growing bundle list: add new bundles, update untouched changed ones, report conflicts */
+function diffBundles(existing, incoming) {
+  const ex = new Map(existing.map(b => [b.bundle_no, b]));
+  const out = { add: [], same: 0, upd: [], conflict: [] };
+  for (const b of incoming) {
+    const e = ex.get(b.bundle_no);
+    if (!e) { out.add.push(b); continue; }
+    const changed = String(e.size) !== String(b.size) || +e.qty !== +b.qty || String(e.lay_no ?? '') !== String(b.lay_no ?? '') || String(e.dyelot ?? '') !== String(b.dyelot ?? '');
+    if (!changed) { out.same++; continue; }
+    if (e.location === 'CUTTING' && !e.bag_code) out.upd.push({ e, b }); else out.conflict.push({ e, b });
+  }
+  out.missing = existing.filter(e => !incoming.some(b => b.bundle_no === e.bundle_no));
+  return out;
+}
+async function appendToCut(cut, h, incoming) {
+  const existing = await Store.list('cw_bundles', { cut_id: cut.id });
+  const d = diffBundles(existing, incoming);
+  if (d.add.length) await Store.insert('cw_bundles', d.add.map(b => bundleRow(cut.cut_ref, cut.id, h, b)));
+  for (const { e, b } of d.upd) await Store.update('cw_bundles', { id: e.id }, { size: String(b.size), qty: b.qty, lay_no: b.lay_no != null ? String(b.lay_no) : null, dyelot: b.dyelot != null ? String(b.dyelot) : null, sobar_from: b.sobar_from || null, sobar_to: b.sobar_to || null });
+  const all = await Store.list('cw_bundles', { cut_id: cut.id });
+  await Store.update('cw_cuts', { id: cut.id }, { total_bundles: all.length, total_units: sumQ(all), parts: h.parts || cut.parts || [], order_sizes: h.order_sizes || cut.order_sizes || {}, order_total: h.order_total || cut.order_total, print_parts: h.print_parts || cut.print_parts || [] });
+  return d;
+}
+function addSizeRow(size = '') {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td><input class="sz" value="${esc(size)}" style="width:90px"></td><td><input class="un" type="number" min="0" style="width:120px"></td><td class="nb muted">–</td><td><button class="btn sec sm" title="Remove">✕</button></td>`;
+  tr.querySelector('button').onclick = () => { tr.remove(); calcPrev(); };
+  tr.querySelectorAll('input').forEach(i => i.oninput = calcPrev);
+  $('#cSizes').appendChild(tr);
+}
+function calcPrev() {
+  const bq = +$('#cBq').value || CFG.bundleQty; let nb = 0, u = 0;
+  [...$('#cSizes').children].forEach(tr => { const un = +tr.querySelector('.un').value || 0; const n = un > 0 ? Math.ceil(un / bq) : 0; tr.querySelector('.nb').textContent = n || '–'; nb += n; u += un; });
+  $('#cPrev').textContent = nb ? `${nb} bundles · ${u} units` : '';
+}
+async function saveManualCut() {
+  const style = $('#cStyle').value.trim().toUpperCase(), colour = $('#cColour').value.trim().toUpperCase(), cut_no = $('#cCut').value.trim();
+  if (!style || !cut_no) return toast('Style and cut no. are required', 'bad');
+  const bq = +$('#cBq').value || CFG.bundleQty;
+  const sizes = [...$('#cSizes').children].map(tr => ({ size: tr.querySelector('.sz').value.trim().toUpperCase(), units: +tr.querySelector('.un').value || 0 })).filter(s => s.size && s.units > 0);
+  if (!sizes.length) return toast('Enter units for at least one size', 'bad');
+  const bundles = []; let n = 0;
+  sizes.forEach(s => { let left = s.units; while (left > 0) { const q = Math.min(bq, left); left -= q; bundles.push({ bundle_no: ++n, size: s.size, qty: q }); } });
+  try {
+    const cut = await createCut({ style, colour, cut_no, order_no: $('#cOrder').value.trim(), component: $('#cComp').value.trim(), printer: $('#cPrinter').value }, bundles);
+    toast(`Created ${cutName(cut)} — ${bundles.length} bundles`);
+    ['#cStyle', '#cColour', '#cCut', '#cOrder', '#cComp'].forEach(s => $(s).value = '');
+    $$('#cSizes .un').forEach(i => i.value = ''); calcPrev();
+    await loadCuts(); renderCutRows();
+    const go2 = await ask({ title: 'Cut created', html: `<p><b>${esc(cutName(cut))}</b> — ${bundles.length} bundles, ${sumQ(bundles)} units.</p>`, buttons: [{ label: 'Later', val: false, cls: 'sec' }, { label: 'Print bundle labels', val: true }] });
+    if (go2) printBundleLabels(cut);
+  } catch (e) { toast(e.message, 'bad', 5000); }
+}
+function renderCutRows() {
+  const q = $('#cutSearch').value.trim().toUpperCase();
+  const rows = CUTS.filter(c => !q || [c.style, c.colour, c.cut_no, c.cut_ref, c.order_no, c.po_no, c.job_no].join(' ').toUpperCase().includes(q)).slice(0, 300);
+  $('#cutRows').innerHTML = rows.map(c => `<tr><td><b>${esc(cutTag(c))}</b></td><td>${esc(c.style)}</td><td>${esc(c.colour)}</td><td>${esc(c.po_no || c.order_no || '')}</td><td class="n">${c.lay_count || '–'}</td><td class="n">${c.total_bundles}</td><td class="n">${c.total_units}</td><td class="n">${c.order_total ? `${c.order_total} <span class="muted">(${Math.round(100 * c.total_units / c.order_total)}%)</span>` : '–'}</td><td>${esc(c.printer)}</td>
+    <td class="row" style="flex-wrap:nowrap"><button class="btn sec sm" data-a="lbl" data-id="${c.id}">Labels</button><button class="btn sec sm" data-a="bag" data-id="${c.id}">Bag</button><button class="btn sec sm" data-a="rc" data-id="${c.id}">Recon</button></td></tr>`).join('') || `<tr><td colspan="10" class="muted">No cuts yet.</td></tr>`;
+  $$('#cutRows [data-a]').forEach(b => b.onclick = async () => {
+    const cut = CUTS.find(c => c.id === b.dataset.id);
+    if (b.dataset.a === 'lbl') printBundleLabels(cut);
+    if (b.dataset.a === 'bag') { await go('bag'); $('#bgCut').value = cut.id; bgLoad(cut.id); }
+    if (b.dataset.a === 'rc') { await go('recon'); $('#rcCut').value = cut.id; reconCut(cut.id); }
+  });
+}
+async function layCounts() { if (!CUTS.length) return; const bs = await Store.list('cw_bundles', { cut_id: CUTS.map(c => c.id) }); const m = {}; bs.forEach(b => { if (b.lay_no) (m[b.cut_id] = m[b.cut_id] || new Set()).add(b.lay_no); }); CUTS.forEach(c => c.lay_count = m[c.id] ? m[c.id].size : 0); }
+async function showCuts() {
+  fillSelect($('#cPrinter'), ['', ...partiesOf('PRINTER')], v => v || '— none —');
+  if (!$('#cBq').value) $('#cBq').value = CFG.bundleQty;
+  if (!$('#cSizes').children.length) ['XS', 'S', 'M', 'L', 'XL'].forEach(addSizeRow);
+  await loadCuts(); await layCounts(); renderCutRows(); calcPrev();
+}
+
+function parseCSV(t, delim) {
+  const rows = []; let r = [], f = '', q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === delim) { r.push(f); f = ''; }
+    else if (c === '\n') { r.push(f); rows.push(r); r = []; f = ''; }
+    else if (c !== '\r') f += c;
+  }
+  if (f || r.length) { r.push(f); rows.push(r); }
+  return rows.filter(x => x.some(v => v.trim() !== ''));
+}
+/* ---------- import: Bundle list workbook (.xlsm) or CSV ---------- */
+let IMP = null;   // { kind, groups:[{h, bundles, checks, lays, parts, sizes, exists, diff}] }
+const num = v => { const n = typeof v === 'number' ? v : parseFloat(String(v ?? '').trim()); return isFinite(n) ? n : null; };
+const sz = v => { const t = String(v ?? '').trim(); return /^\d+(\.0+)?$/.test(t) ? String(parseInt(t)) : t.toUpperCase(); };
+const sizeSort = (a, b) => { const na = num(a), nb = num(b); if (na != null && nb != null) return na - nb; const o = ['3XS', '2XS', 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL']; return (o.indexOf(a) + 1 || 99) - (o.indexOf(b) + 1 || 99) || String(a).localeCompare(b); };
+
+/* Reads the Prestige "BUNDLE LIST" workbook: page sheets 1..20, header I5:I7 / AC5:AC7, bundle rows from row 18
+   (B bundle, E lay, H dyelot, K size, N-R sobar range, V qty) down to the "TOTAL FOR PAGE" row, parts in AL/AN + AU/AW,
+   and the size breakdown (size / order) below "SIZE". Uses the values Excel saved, so the file must have been saved after editing. */
+function parseBundleWorkbook(wb) {
+  const pages = [];
+  for (const name of wb.SheetNames) {
+    const ws = wb.Sheets[name];
+    const v = a => ws[a] ? ws[a].v : null;
+    if (!/JOB/i.test(String(v('B6') || '')) || !/PO/i.test(String(v('B5') || ''))) continue;
+    pages.push({ name, ws, v });
+  }
+  if (!pages.length) return null;
+  const p1 = pages[0].v, str = a => String(p1(a) ?? '').trim();
+  const h = { po_no: str('I5'), job_no: str('I6'), product: str('I7'), colour: str('AC5').toUpperCase(), layer_up: str('AC6'), order_total: num(p1('AC7')), factory: str('S1') };
+  const checks = [], bundles = [], parts = [], order_sizes = {};
+  let pageTotalsOk = true;
+  for (const pg of pages) {
+    const { v } = pg;
+    if (String(v('I6') ?? '').trim() !== h.job_no || String(v('AC5') ?? '').trim().toUpperCase() !== h.colour) checks.push(['bad', `Page ${pg.name}: header job/colour differs from page 1`]);
+    let r = 18, rows = [], total = null;
+    for (; r < 120; r++) {
+      const b = v('B' + r);
+      if (typeof b === 'string' && /TOTAL/i.test(b)) { total = num(v('V' + r)); break; }
+      const bn = num(b), q = num(v('V' + r));
+      if (bn && q && q > 0) rows.push({ bundle_no: bn, lay_no: v('E' + r) ?? '', dyelot: v('H' + r) ?? '', size: sz(v('K' + r)), sobar_from: num(v('N' + r)), sobar_to: num(v('R' + r)), qty: q, page: pg.name });
+    }
+    if (total != null && Math.round(total) !== sumQ(rows)) { pageTotalsOk = false; checks.push(['bad', `Page ${pg.name}: page total ${total} ≠ sum of bundles ${sumQ(rows)}`]); }
+    bundles.push(...rows);
+    if (pg === pages[0]) {
+      for (let rr = 18; rr < r; rr++) for (const [cn, cp] of [['AL', 'AN'], ['AU', 'AW']]) {
+        const nm = String(v(cp + rr) ?? '').trim(), no = num(v(cn + rr));
+        if (nm && nm !== '0' && no) parts.push({ no, name: nm.toUpperCase() });
+      }
+      let sr = null; for (let rr = r; rr < r + 30; rr++) if (String(v('A' + rr) ?? '').trim().toUpperCase() === 'SIZE') { sr = rr; break; }
+      if (sr) for (let rr = sr + 1; rr < sr + 20; rr++) for (const [sc, oc] of [['A', 'J'], ['S', 'AB'], ['AK', 'AT']]) {
+        const s0 = v(sc + rr), o = num(v(oc + rr));
+        if (s0 != null && !/TOT/i.test(String(s0)) && o) order_sizes[sz(s0)] = (order_sizes[sz(s0)] || 0) + o;
+      }
+    }
+  }
+  parts.sort((a, b) => a.no - b.no);
+  h.parts = parts; h.order_sizes = order_sizes;
+  h.style = h.product.toUpperCase(); h.cut_no = h.job_no; h.order_no = h.po_no; h.source = 'xlsm';
+  h.cut_ref = jobRef(h.job_no, h.colour);
+  return { h, bundles, checks, pageTotalsOk, pageCount: pages.filter(p => bundles.some(b => b.page === p.name)).length };
+}
+function validate(g) {
+  const { h, bundles } = g, c = g.checks;
+  if (!h.job_no) c.push(['bad', 'No job number in the header']);
+  if (!bundles.length) c.push(['bad', 'No bundles found']);
+  const nos = bundles.map(b => b.bundle_no), dup = nos.filter((n, i) => nos.indexOf(n) !== i);
+  if (dup.length) c.push(['bad', `Duplicate bundle numbers: ${uniq(dup).join(', ')}`]);
+  const sorted = [...nos].sort((a, b) => a - b), gaps = [];
+  sorted.forEach((n, i) => { if (i && n !== sorted[i - 1] + 1) gaps.push(`${sorted[i - 1] + 1}–${n - 1}`); });
+  if (!dup.length && !gaps.length && bundles.length) c.push(['ok', `Bundle numbers 1–${sorted[sorted.length - 1]} continuous`]);
+  if (gaps.length) c.push(['warn', `Gaps in bundle numbers: ${gaps.join(', ')}`]);
+  if (bundles.some(b => b.sobar_from != null)) {
+    const badR = bundles.filter(b => b.sobar_from != null && b.sobar_to - b.sobar_from + 1 !== b.qty);
+    const ord = [...bundles].sort((a, b) => a.bundle_no - b.bundle_no), brk = ord.filter((b, i) => i && b.sobar_from !== ord[i - 1].sobar_to + 1);
+    if (!badR.length && !brk.length) c.push(['ok', `Sobar ranges continuous 1–${ord[ord.length - 1].sobar_to}, every range matches its qty`]);
+    if (badR.length) c.push(['bad', `Sobar range ≠ qty on bundle(s) ${badR.map(b => b.bundle_no).join(', ')}`]);
+    if (brk.length) c.push(['warn', `Sobar range jumps at bundle(s) ${brk.map(b => b.bundle_no).join(', ')}`]);
+  }
+  if (g.pageTotalsOk) c.push(['ok', `Page totals agree (${g.pageCount} page${g.pageCount === 1 ? '' : 's'} used)`]);
+  const pn = (h.parts || []).map(p => p.name), dp = pn.filter((n, i) => pn.indexOf(n) !== i);
+  if (dp.length) c.push(['warn', `Part name listed twice: ${uniq(dp).join(', ')} — check whether both are meant (e.g. front and back)`]);
+  const os = h.order_sizes || {}, osTot = Object.values(os).reduce((a, b) => a + b, 0);
+  if (h.order_total && osTot && h.order_total !== osTot) c.push(['warn', `Header order total ${h.order_total} ≠ size breakdown total ${osTot}`]);
+  const extra = uniq(bundles.map(b => b.size)).filter(s => osTot && !(s in os));
+  if (extra.length) c.push(['warn', `Size(s) cut but not on the order: ${extra.join(', ')}`]);
+  const cutBy = {}; bundles.forEach(b => cutBy[b.size] = (cutBy[b.size] || 0) + b.qty);
+  const over = Object.keys(os).filter(s => (cutBy[s] || 0) > os[s]);
+  if (over.length) c.push(['warn', `Over-cut against order: ${over.map(s => `${s} (+${cutBy[s] - os[s]})`).join(', ')}`]);
+  return g;
+}
+function summarise(g) {
+  const L = new Map();
+  for (const b of g.bundles) { const k = `${b.lay_no}|${b.dyelot}`; if (!L.has(k)) L.set(k, { lay: b.lay_no, dye: b.dyelot, sizes: {}, n: 0, u: 0 }); const x = L.get(k); x.sizes[b.size] = (x.sizes[b.size] || 0) + b.qty; x.n++; x.u += b.qty; }
+  g.lays = [...L.values()];
+  const sizes = uniq([...g.bundles.map(b => b.size), ...Object.keys(g.h.order_sizes || {})]).sort(sizeSort);
+  g.sizes = sizes.map(s => { const cut = g.bundles.filter(b => b.size === s); return { s, n: cut.length, cut: sumQ(cut), order: (g.h.order_sizes || {})[s] || 0 }; });
+  return g;
+}
+function csvGroups(txt) {
+  txt = txt.replace(/^﻿/, '');
+  const first = txt.split(/\r?\n/)[0];
+  const delim = first.split(';').length > first.split(',').length ? ';' : ',';
+  const rows = parseCSV(txt, delim);
+  if (rows.length < 2) throw new Error('The file has no data rows');
+  const H = rows[0].map(h => h.trim().toLowerCase().replace(/[\s.#/]+/g, '_').replace(/^_+|_+$/g, ''));
+  const AL = { style: ['style', 'style_no', 'style_code', 'product'], colour: ['colour', 'color'], cut_no: ['cut_no', 'cut', 'cutno', 'cut_number', 'job', 'job_no', 'job_number'], bundle_no: ['bundle_no', 'bundle', 'bundle_number', 'bundleno', 'bndl'], size: ['size'], qty: ['qty', 'quantity', 'units', 'pcs', 'pieces'], order_no: ['order_no', 'order', 'po', 'po_no', 'po_number'], component: ['component', 'panel', 'part'], printer: ['printer', 'supplier', 'outwork'], lay_no: ['lay', 'lay_no', 'lay_number'], dyelot: ['dyelot', 'dye_lot', 'dye', 'dyelot_number'] };
+  const idx = {}; for (const [k, a] of Object.entries(AL)) idx[k] = H.findIndex(h => a.includes(h));
+  const miss = ['style', 'cut_no', 'bundle_no', 'size', 'qty'].filter(k => idx[k] < 0);
+  if (miss.length) throw new Error('Missing column(s): ' + miss.join(', '));
+  const groups = new Map();
+  rows.slice(1).forEach((r, i) => {
+    const g = k => idx[k] >= 0 ? (r[idx[k]] || '').trim() : '';
+    const style = g('style').toUpperCase(), colour = g('colour').toUpperCase(), cut_no = g('cut_no');
+    if (!style || !cut_no) return;
+    const key = [style, colour, cut_no].join('|');
+    if (!groups.has(key)) groups.set(key, { h: { style, colour, cut_no, order_no: g('order_no'), component: g('component'), printer: g('printer'), source: 'csv', parts: [], order_sizes: {} }, bundles: [], checks: [], pageTotalsOk: false });
+    const G = groups.get(key), bn = parseInt(g('bundle_no')), qty = parseInt(g('qty'));
+    if (!bn || !(qty > 0)) return G.checks.push(['bad', `Row ${i + 2}: bad bundle no. or qty`]);
+    G.bundles.push({ bundle_no: bn, size: sz(g('size')), qty, component: g('component'), lay_no: g('lay_no'), dyelot: g('dyelot') });
+  });
+  return [...groups.values()];
+}
+async function readImport(file) {
+  const isX = /\.(xlsm|xlsx|xls)$/i.test(file.name);
+  let groups;
+  if (isX) {
+    if (!window.XLSX) throw new Error('Excel reader did not load — check the internet connection');
+    const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+    const g = parseBundleWorkbook(wb);
+    if (g) groups = [g];
+    else {   // plain table on the first sheet
+      const csv = XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]);
+      groups = csvGroups(csv);
+    }
+  } else groups = csvGroups(await file.text());
+  await loadCuts();
+  for (const g of groups) {
+    g.h.cut_ref = g.h.cut_ref || mkRef(g.h.style, g.h.colour, g.h.cut_no);
+    validate(g); summarise(g);
+    g.exists = CUTS.find(c => c.cut_ref === g.h.cut_ref) || null;
+    if (g.exists) g.diff = diffBundles(await Store.list('cw_bundles', { cut_id: g.exists.id }), g.bundles);
+    g.h.print_parts = g.exists?.print_parts?.length ? g.exists.print_parts : [];
+    if (!g.h.printer && g.exists) g.h.printer = g.exists.printer;
+  }
+  IMP = { name: file.name, groups };
+}
+function renderCsvPrev() {
+  const box = $('#csvPrev');
+  if (!IMP) { box.innerHTML = ''; return; }
+  const one = IMP.groups.length === 1 && IMP.groups[0].h.source === 'xlsm';
+  if (!one) {   // CSV with several cuts: compact list
+    const ok = IMP.groups.filter(g => !g.checks.some(c => c[0] === 'bad'));
+    box.innerHTML = `<div class="tw"><table><thead><tr><th>Style</th><th>Colour</th><th>Cut / job</th><th class="n">Bundles</th><th class="n">Units</th><th>Check</th></tr></thead><tbody>${IMP.groups.map(g => `<tr><td>${esc(g.h.style)}</td><td>${esc(g.h.colour)}</td><td>${esc(g.h.cut_no)}</td><td class="n">${g.bundles.length}</td><td class="n">${sumQ(g.bundles)}</td><td>${g.checks.filter(c => c[0] === 'bad').map(c => `<span class="tag bad">${esc(c[1])}</span>`).join(' ') || (g.exists ? `<span class="tag warn">Exists — ${g.diff.add.length} new bundle(s) will be added</span>` : '<span class="tag ok">Ready</span>')}</td></tr>`).join('')}</tbody></table></div>
+      <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn sec sm" id="impCancel">Cancel</button><button class="btn" id="impGo" ${ok.length ? '' : 'disabled'}>Import ${ok.length} cut(s)</button></div>`;
+  } else {
+    const g = IMP.groups[0], h = g.h, d = g.diff, bad = g.checks.some(c => c[0] === 'bad');
+    const tCut = sumQ(g.bundles), tOrd = Object.values(h.order_sizes).reduce((a, b) => a + b, 0) || h.order_total || 0;
+    box.innerHTML = `<div class="card" style="border-color:var(--pri);margin:0">
+      <div class="row"><h2 style="margin:0">${esc(IMP.name)}</h2>${g.exists ? '<span class="tag warn">Job already in CutTrack — update</span>' : '<span class="tag ok">New job</span>'}</div>
+      <div class="imp-h" style="margin-top:10px">
+        <div><span>PO</span><b>${esc(h.po_no)}</b></div><div><span>Job</span><b>${esc(h.job_no)}</b></div><div><span>Product</span><b>${esc(h.product)}</b></div>
+        <div><span>Colour</span><b>${esc(h.colour)}</b></div><div><span>Layer up</span><b>${esc(h.layer_up)}</b></div><div><span>Order total</span><b>${h.order_total ?? '–'}</b></div></div>
+      <div class="kpis"><div class="kpi"><b>${g.bundles.length}</b><span>Bundles</span></div><div class="kpi"><b>${tCut}</b><span>Units cut</span></div>
+        <div class="kpi"><b>${uniq(g.bundles.map(b => b.lay_no)).length}</b><span>Lays</span></div><div class="kpi"><b>${uniq(g.bundles.map(b => b.dyelot)).length}</b><span>Dyelots</span></div>
+        <div class="kpi"><b>${(h.parts || []).length}</b><span>Parts per bundle</span></div>${tOrd ? `<div class="kpi ${tCut < tOrd ? 'warn' : 'ok'}"><b>${Math.round(100 * tCut / tOrd)}%</b><span>of order cut</span></div>` : ''}</div>
+      <h3 class="sub">Checks</h3><ul class="checks">${g.checks.map(([k, t]) => `<li class="${k}">${k === 'ok' ? '✓' : k === 'bad' ? '✗' : '⚠'} ${esc(t)}</li>`).join('')}</ul>
+      ${g.exists ? `<h3 class="sub">Compared with what is already in CutTrack</h3><ul class="checks">
+        <li class="${d.add.length ? 'ok' : ''}">${d.add.length} new bundle(s) (${sumQ(d.add)} units) will be added</li><li>${d.same} unchanged</li>
+        ${d.upd.length ? `<li class="warn">${d.upd.length} changed bundle(s) not yet bagged will be updated: ${d.upd.map(x => '#' + x.b.bundle_no).join(', ')}</li>` : ''}
+        ${d.conflict.length ? `<li class="bad">${d.conflict.length} changed bundle(s) are already bagged or dispatched and will NOT be changed: ${d.conflict.map(x => '#' + x.b.bundle_no).join(', ')}</li>` : ''}
+        ${d.missing.length ? `<li class="warn">${d.missing.length} bundle(s) in CutTrack are no longer in this workbook: ${d.missing.map(x => '#' + x.bundle_no).join(', ')}</li>` : ''}</ul>` : ''}
+      <h3 class="sub">Lays</h3><div class="tw" style="max-height:260px"><table><thead><tr><th>Lay</th><th>Dyelot</th><th>Sizes (units)</th><th class="n">Bundles</th><th class="n">Units</th></tr></thead><tbody>
+        ${g.lays.map(l => `<tr><td>${esc(l.lay)}</td><td>${esc(l.dye)}</td><td>${Object.entries(l.sizes).sort((a, b) => sizeSort(a[0], b[0])).map(([s, u]) => `<b>${esc(s)}</b> ${u}`).join(' · ')}</td><td class="n">${l.n}</td><td class="n">${l.u}</td></tr>`).join('')}</tbody></table></div>
+      <h3 class="sub">Size breakdown — cut vs order</h3><div class="tw" style="max-height:none"><table><thead><tr><th>Size</th><th class="n">Bundles</th><th class="n">Cut</th><th class="n">Order</th><th class="n">Still to cut</th></tr></thead><tbody>
+        ${g.sizes.map(x => `<tr><td>${esc(x.s)}</td><td class="n">${x.n}</td><td class="n">${x.cut}</td><td class="n">${x.order || '–'}</td><td class="n" style="color:${x.order && x.cut > x.order ? 'var(--bad)' : 'inherit'}">${x.order ? x.order - x.cut : '–'}</td></tr>`).join('')}
+        <tr><td><b>Total</b></td><td class="n"><b>${g.bundles.length}</b></td><td class="n"><b>${tCut}</b></td><td class="n"><b>${tOrd || '–'}</b></td><td class="n"><b>${tOrd ? tOrd - tCut : '–'}</b></td></tr></tbody></table></div>
+      ${(h.parts || []).length ? `<h3 class="sub">Which parts go to the printer?</h3><p class="muted" style="margin-top:0">Tick the panels that travel in the bags. Their stickers are the ones scanned; scanning another part's sticker into a printer bag gives a warning. Leave all unticked if every part travels.</p>
+        <div class="chips">${h.parts.map(p => `<label class="chk ${h.print_parts.includes(p.no) ? 'on' : ''}"><input type="checkbox" class="impP" value="${p.no}" ${h.print_parts.includes(p.no) ? 'checked' : ''}> ${p.no}. ${esc(p.name)}</label>`).join('')}</div>` : ''}
+      <div class="grid" style="margin-top:12px"><label class="f">Printer for this job<select id="impPr">${['', ...partiesOf('PRINTER')].map(p => `<option value="${esc(p)}" ${p === h.printer ? 'selected' : ''}>${esc(p || '— choose later —')}</option>`).join('')}</select></label></div>
+      <div class="row" style="margin-top:14px"><span class="sp"></span><button class="btn sec" id="impCancel">Cancel</button>
+        <button class="btn" id="impGo" ${bad || (g.exists && !d.add.length && !d.upd.length) ? 'disabled' : ''}>${g.exists ? (d.add.length || d.upd.length ? `Add ${d.add.length} new bundle(s)${d.upd.length ? ` & update ${d.upd.length}` : ''}` : 'Nothing new to import') : `Import job — ${g.bundles.length} bundles`}</button></div></div>`;
+    $$('.impP').forEach(i => i.onchange = () => { i.parentElement.classList.toggle('on', i.checked); h.print_parts = $$('.impP:checked').map(x => +x.value); });
+    $('#impPr').onchange = e => h.printer = e.target.value;
+  }
+  $('#impCancel').onclick = () => { IMP = null; $('#csvFile').value = ''; renderCsvPrev(); };
+  $('#impGo').onclick = doImport;
+}
+async function doImport() {
+  if (!IMP) return;
+  let made = [], msgs = [];
+  for (const g of IMP.groups) {
+    if (g.checks.some(c => c[0] === 'bad')) continue;
+    try {
+      if (g.exists) { const d = await appendToCut(g.exists, g.h, g.bundles); if (g.h.printer && g.h.printer !== g.exists.printer) await Store.update('cw_cuts', { id: g.exists.id }, { printer: g.h.printer }); msgs.push(`${cutTag(g.exists)}: +${d.add.length} bundles`); made.push({ cut: g.exists, newNos: d.add.map(b => b.bundle_no) }); }
+      else { const c = await createCut(g.h, g.bundles); msgs.push(`${cutTag(c)}: ${g.bundles.length} bundles`); made.push({ cut: c, newNos: null }); }
+    } catch (e) { toast(e.message, 'bad', 6000); }
+  }
+  IMP = null; $('#csvFile').value = ''; renderCsvPrev(); await loadCuts(); await layCounts(); renderCutRows();
+  if (!made.length) return;
+  toast('Imported — ' + msgs.join('; '), 'ok', 4000);
+  if (made.length === 1) {
+    const { cut, newNos } = made[0], c2 = CUTS.find(c => c.id === cut.id) || cut;
+    if (await ask({ title: 'Imported', html: `<p>${esc(msgs[0])}.</p><p class="muted">${newNos ? 'Only the new lays need labels.' : 'Print the part stickers (with QR) now, in place of the Word labels?'}</p>`, buttons: [{ label: 'Later', val: false, cls: 'sec' }, { label: 'Print labels', val: true }] })) printBundleLabels(c2, 'part');
+  }
+}
+
+/* =====================================================================
+   BAGGING
+   ===================================================================== */
+let BG = { cut: null, bundles: [], bags: [], active: null };
+async function showBag() { await loadCuts(); cutOptions($('#bgCut'), BG.cut?.id || ''); if (BG.cut) await bgRefresh(); renderBag(); }
+async function bgLoad(id) { BG = { cut: null, bundles: [], bags: [], active: null }; if (id) { BG.cut = await getCut(id); await bgRefresh(); } renderBag(); }
+async function bgRefresh() {
+  BG.bundles = await Store.list('cw_bundles', { cut_id: BG.cut.id }, { order: 'bundle_no', asc: true });
+  BG.bags = await Store.list('cw_bags', { cut_id: BG.cut.id }, { order: 'bag_no', asc: true });
+}
+function renderBag() {
+  $('#bgWrap').classList.toggle('hidden', !BG.cut);
+  if (!BG.cut) return;
+  const tot = BG.bundles.length, bagged = BG.bundles.filter(b => b.bag_code), un = tot - bagged.length;
+  $('#bgTop').innerHTML = `<div class="kpis">
+    <div class="kpi ${un ? '' : 'ok'}"><b>${bagged.length}/${tot}</b><span>Bundles bagged</span></div>
+    <div class="kpi"><b>${sumQ(bagged)}/${sumQ(BG.bundles)}</b><span>Units bagged</span></div>
+    <div class="kpi"><b>${BG.bags.length}</b><span>Bags</span></div>
+    <div class="kpi ${un ? 'warn' : 'ok'}"><b>${un}</b><span>Not yet bagged</span></div></div>
+    <div class="chips">${BG.bags.map(g => { const n = BG.bundles.filter(b => b.bag_code === g.code); return `<button class="chip ${g.code === BG.active ? 'on' : ''}" data-bag="${esc(g.code)}">BAG ${pad(g.bag_no, 2)} · ${n.length} bdl · ${sumQ(n)} u</button>`; }).join('') || '<span class="muted">No bags yet — create bags and print their labels.</span>'}</div>`;
+  $$('#bgTop [data-bag]').forEach(b => b.onclick = () => { BG.active = b.dataset.bag; renderBag(); });
+  const act = BG.bags.find(g => g.code === BG.active);
+  $('#bgActive').className = 'activebag' + (act ? '' : ' none');
+  $('#bgActive').textContent = act ? `Active: BAG ${pad(act.bag_no, 2)} — scan bundles into this bag` : 'No active bag — scan a bag label first';
+  const only = $('#bgOnlyUn').checked;
+  const list = BG.bundles.filter(b => !only || !b.bag_code);
+  $('#bgList').innerHTML = `<div class="tw"><table><thead><tr><th>Bundle</th><th>Lay / dye</th><th>Size</th><th class="n">Qty</th><th>Bag</th><th>Where</th></tr></thead><tbody>${list.map(b => `<tr><td>#${b.bundle_no}</td><td class="muted">${esc(layTxt(b))}</td><td>${esc(b.size)}</td><td class="n">${b.qty}</td><td>${b.bag_code ? bagShort(b.bag_code) : '<span class="tag warn">not bagged</span>'}</td><td class="muted">${esc(locText(b))}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">All bundles are bagged.</td></tr>'}</tbody></table></div>`;
+}
+async function bgScan(code) {
+  if (!BG.cut) return say('bg', 'Select a cut first', 'bad');
+  if (code.startsWith('BAG-')) {
+    const bag = BG.bags.find(b => b.code === code);
+    if (!bag) { const g = await Store.one('cw_bags', { code }); if (!g) return say('bg', `Unknown bag label ${code}`, 'bad'); if (!g.cut_id) return say('bg', `${bagShort(code)} is a generic bag label — bag bundles with the Sorter app`, 'bad'); return say('bg', `WRONG BAG: this bag belongs to ${cutName(await getCut(g.cut_id))}`, 'bad'); }
+    BG.active = code; say('bg', `Active bag: BAG ${pad(bag.bag_no, 2)}`, 'ok'); return renderBag();
+  }
+  if (!code.startsWith('BDL-')) return say('bg', `Not a bundle or bag label: ${code}`, 'bad');
+  const pc = parseCode(code); code = pc.code;
+  const b = BG.bundles.find(x => x.code === code);
+  if (!b) { const g = await Store.one('cw_bundles', { code }); if (!g) return say('bg', `Unknown bundle label ${code}`, 'bad'); return say('bg', `WRONG CUT: bundle #${g.bundle_no} is ${cutName(await getCut(g.cut_id))}`, 'bad'); }
+  if (!BG.active) return say('bg', 'Scan a bag label first', 'bad');
+  if (b.location !== 'CUTTING') return say('bg', `Bundle #${b.bundle_no} is already ${locText(b)}`, 'bad');
+  if (b.bag_code === BG.active) return say('bg', `Bundle #${b.bundle_no} is already in ${bagShort(BG.active)}`, 'info');
+  const prev = b.bag_code;
+  await Store.update('cw_bundles', { id: b.id }, { bag_code: BG.active }); b.bag_code = BG.active;
+  const pn = partNote(BG.cut, pc.part);
+  say('bg', (prev ? `Bundle #${b.bundle_no} moved from ${bagShort(prev)} to ${bagShort(BG.active)}` : `Bundle #${b.bundle_no} · ${b.size} · ${b.qty} → ${bagShort(BG.active)}`) + pn, prev || pn ? 'warn' : 'ok');
+  renderBag();
+}
+async function bgNew() {
+  const n = Math.min(50, Math.max(1, +$('#bgN').value || 1));
+  const start = BG.bags.reduce((m, b) => Math.max(m, b.bag_no), 0);
+  const rows = Array.from({ length: n }, (_, i) => ({ code: `BAG-${BG.cut.cut_ref}-${pad(start + i + 1, 2)}`, cut_id: BG.cut.id, bag_no: start + i + 1 }));
+  const made = await Store.insert('cw_bags', rows);
+  await bgRefresh(); BG.active = made[0].code; renderBag();
+  printLabels(made.map(g => bagLabel(BG.cut, g)), 'bag labels');
+}
+function bgCheck() {
+  const un = BG.bundles.filter(b => !b.bag_code && b.location === 'CUTTING');
+  if (!un.length) { say('bg', 'All bundles on the bundle list are bagged ✓', 'ok'); return; }
+  beep('warn');
+  ask({ title: `${un.length} bundle(s) not bagged`, html: `<p>These bundles are on the bundle list but have not been scanned into a bag (${sumQ(un)} units):</p><div class="tw"><table><thead><tr><th>Bundle</th><th>Size</th><th class="n">Qty</th></tr></thead><tbody>${un.map(b => `<tr><td>#${b.bundle_no}</td><td>${esc(b.size)}</td><td class="n">${b.qty}</td></tr>`).join('')}</tbody></table></div>`, buttons: [{ label: 'OK', val: true }] });
+}
+
+/* =====================================================================
+   DISPATCH
+   ===================================================================== */
+let D = { cuts: [], bundles: [], scanned: new Set(), bags: new Set(), init: false };
+const dLeg = () => LEGS[$('#dLeg').value];
+function dEligible(b) { const L = dLeg(); return b.location === L.src && (L.src !== 'PRINTER' || b.holder === $('#dFrom').value); }
+const dExp = () => D.bundles.filter(dEligible);
+function dReset() { D.cuts = []; D.bundles = []; D.scanned = new Set(); D.bags = new Set(); }
+function dParties() {
+  const L = dLeg();
+  fillSelect($('#dFrom'), partiesOf(L.fromKind));
+  fillSelect($('#dTo'), partiesOf(L.toKind));
+  if (L.fromKind === 'PRINTER' && ME.station === 'PRINT' && partiesOf('PRINTER').includes(ME.party)) $('#dFrom').value = ME.party;
+}
+function dCutOptions() { fillSelect($('#dCutSel'), ['', ...CUTS.filter(c => !D.cuts.some(x => x.id === c.id)).map(c => c.id)], id => id ? cutName(CUTS.find(c => c.id === id)) : '— cut —'); }
+async function showDispatch() {
+  await loadCuts();
+  if (!D.init) { D.init = true; $('#dLeg').value = ME.station === 'PRINT' ? 'PRINT_TO_SEW' : 'CUT_TO_PRINT'; }
+  dParties(); dCutOptions(); renderD();
+}
+async function dAddCut(cut, quiet) {
+  if (D.cuts.some(c => c.id === cut.id)) return true;
+  const bs = await Store.list('cw_bundles', { cut_id: cut.id }, { order: 'bundle_no', asc: true });
+  const L = dLeg(), el = bs.filter(dEligible);
+  if (!el.length) { say('d', `${cutName(cut)}: no bundles ${L.src === 'PRINTER' ? 'at ' + $('#dFrom').value : 'at cutting'} waiting for dispatch`, 'bad'); return false; }
+  D.cuts.push(cut); D.bundles.push(...bs);
+  if (L.toKind === 'PRINTER' && D.cuts.length === 1 && cut.printer && partiesOf('PRINTER').includes(cut.printer)) $('#dTo').value = cut.printer;
+  if (!quiet) say('d', `Added ${cutName(cut)} — ${el.length} bundles on the list`, 'info');
+  dCutOptions(); renderD(); return true;
+}
+async function dConfirmAdd(cut, what) {
+  if (!D.cuts.length) return true;
+  beep('warn');
+  return ask({ title: 'Bundle from another cut', html: `<p>${esc(what)} belongs to <b>${esc(cutName(cut))}</b>, which is not on this delivery.</p><p class="muted">If it is the wrong bundle, set it aside. If this cut is meant to go on the same delivery, add it.</p>`, buttons: [{ label: 'Set aside — wrong bundle', val: false, cls: 'bad' }, { label: 'Add cut to delivery', val: true }] });
+}
+async function dScan(code) {
+  if (code.startsWith('DN-')) return say('d', 'That is a delivery note — scan bags and bundles here', 'warn');
+  if (code.startsWith('BAG-')) {
+    let inBag = D.bundles.filter(b => b.bag_code === code);
+    if (!inBag.length) {
+      const bag = await Store.one('cw_bags', { code });
+      if (!bag) return say('d', `Unknown label ${code}`, 'bad');
+      if (!bag.cut_id) return say('d', `${bagShort(code)} is empty — nothing was scanned into it`, 'bad');
+      const cut = await getCut(bag.cut_id);
+      if (!D.cuts.some(c => c.id === cut.id)) {
+        if (!await dConfirmAdd(cut, `Bag ${bagShort(code)}`)) return say('d', `Wrong bag set aside — ${cutName(cut)}`, 'bad');
+        if (!await dAddCut(cut)) return;
+      }
+      inBag = D.bundles.filter(b => b.bag_code === code);
+    }
+    const el = inBag.filter(dEligible);
+    if (!el.length) return say('d', `${bagShort(code)}: none of its bundles are available for this dispatch`, 'bad');
+    if (D.bags.has(code)) return say('d', `${bagShort(code)} already scanned`, 'info');
+    const bagRow = await Store.one('cw_bags', { code });
+    D.bags.add(code);
+    if (bagRow && bagRow.status === 'OPEN' && bagRow.opened_by) say('d', `${bagShort(code)} ✓ — ${el.length} bundles, but it was NOT closed by ${bagRow.opened_by} — check the count`, 'warn');
+    else say('d', `${bagShort(code)} ✓ — ${el.length} bundles inside${bagRow?.closed_by ? ' (closed by ' + bagRow.closed_by + ')' : ''}`, 'ok');
+    return renderD();
+  }
+  const pc = parseCode(code); code = pc.code;
+  let b = D.bundles.find(x => x.code === code);
+  if (!b) {
+    const g = await Store.one('cw_bundles', { code });
+    if (!g) return say('d', `Unknown label ${code}`, 'bad');
+    const cut = await getCut(g.cut_id);
+    if (!await dConfirmAdd(cut, `Bundle #${g.bundle_no} (${g.size}, ${g.qty})`)) return say('d', `Wrong bundle set aside — #${g.bundle_no} of ${cutName(cut)}`, 'bad');
+    if (!await dAddCut(cut)) return;
+    b = D.bundles.find(x => x.code === code);
+  }
+  if (!dEligible(b)) return say('d', `Bundle #${b.bundle_no} is ${locText(b)} — not available for this dispatch`, 'bad');
+  if (D.scanned.has(code)) return say('d', `Bundle #${b.bundle_no} already scanned`, 'info');
+  D.scanned.add(code);
+  const cut = D.cuts.find(c => c.id === b.cut_id);
+  say('d', `#${b.bundle_no} · ${b.size} · ${b.qty} ✓ ${D.cuts.length > 1 ? '(' + cut.style + ')' : ''}${b.bag_code && !D.bags.has(b.bag_code) ? ' — bag ' + bagShort(b.bag_code).slice(4) + ' not scanned yet' : ''}`, 'ok');
+  renderD();
+}
+function renderD() {
+  const box = $('#dBody');
+  if (!D.cuts.length) { box.innerHTML = `<div class="card muted">No cuts on this delivery yet. Add a cut above or scan the first bag or bundle.</div>`; return; }
+  const exp = dExp(), sc = exp.filter(b => D.scanned.has(b.code)), out = exp.filter(b => !D.scanned.has(b.code));
+  const expBags = uniq(exp.map(b => b.bag_code).filter(Boolean)), outBags = expBags.filter(c => !D.bags.has(c));
+  const done = !out.length && !outBags.length;
+  box.innerHTML = `<div class="card">
+    <div class="kpis">
+      <div class="kpi ${outBags.length ? 'warn' : 'ok'}"><b>${expBags.length - outBags.length}/${expBags.length}</b><span>Bags scanned</span></div>
+      <div class="kpi ${out.length ? 'warn' : 'ok'}"><b>${sc.length}/${exp.length}</b><span>Bundles scanned</span></div>
+      <div class="kpi"><b>${sumQ(sc)}/${sumQ(exp)}</b><span>Units</span></div>
+      <div class="kpi ${out.length ? 'bad' : 'ok'}"><b>${out.length}</b><span>Bundles short</span></div>
+    </div>
+    <div class="tw" style="max-height:none"><table><thead><tr><th>Cut</th><th class="n">Bags</th><th class="n">Bundles</th><th class="n">Units</th><th></th></tr></thead><tbody>
+    ${D.cuts.map(c => { const e = exp.filter(b => b.cut_id === c.id), s = e.filter(b => D.scanned.has(b.code)), gb = uniq(e.map(b => b.bag_code).filter(Boolean)); return `<tr><td><b>${esc(cutName(c))}</b></td><td class="n">${gb.filter(x => D.bags.has(x)).length}/${gb.length}</td><td class="n">${s.length}/${e.length}</td><td class="n">${sumQ(s)}/${sumQ(e)}</td><td>${s.length ? '' : `<button class="btn sec sm" data-rm="${c.id}">Remove</button>`}</td></tr>`; }).join('')}
+    </tbody></table></div>
+    <div class="row" style="margin-top:14px"><button class="btn sec" id="dClear">Clear</button><span class="sp"></span>
+      <button class="btn big ${done ? 'ok' : 'warn'}" id="dGen" ${sc.length ? '' : 'disabled'}>${done ? 'Generate delivery note' : 'Generate delivery note (short)'}</button></div>
+  </div>
+  ${out.length || outBags.length ? `<div class="card"><h2>Still to scan</h2>
+    ${outBags.length ? `<p><b>Bags:</b> ${outBags.map(c => `<span class="tag warn">${bagShort(c)}</span>`).join(' ')}</p>` : ''}
+    ${out.length ? `<div class="tw"><table><thead><tr><th>Cut</th><th>Bag</th><th>Bundle</th><th>Size</th><th class="n">Qty</th></tr></thead><tbody>${out.slice(0, 400).map(b => `<tr><td>${esc(cutName(D.cuts.find(c => c.id === b.cut_id)))}</td><td>${bagShort(b.bag_code)}</td><td>#${b.bundle_no}</td><td>${esc(b.size)}</td><td class="n">${b.qty}</td></tr>`).join('')}</tbody></table></div>` : ''}</div>` : ''}`;
+  $$('#dBody [data-rm]').forEach(b => b.onclick = () => { const id = b.dataset.rm; D.cuts = D.cuts.filter(c => c.id !== id); D.bundles = D.bundles.filter(x => x.cut_id !== id); dCutOptions(); renderD(); });
+  $('#dClear').onclick = async () => { if (D.scanned.size && !await ask({ title: 'Clear this delivery?', html: '<p>All scans on this screen will be discarded.</p>', buttons: [{ label: 'Keep', val: false, cls: 'sec' }, { label: 'Clear', val: true, cls: 'bad' }] })) return; dReset(); dCutOptions(); renderD(); };
+  $('#dGen').onclick = dGenerate;
+}
+function mkDN() { const d = new Date(); return `DN-${String(d.getFullYear()).slice(2)}${pad(d.getMonth() + 1, 2)}${pad(d.getDate(), 2)}-${Date.now().toString(36).slice(-5).toUpperCase()}`; }
+async function dGenerate() {
+  if (!needName()) return;
+  const L = dLeg(), leg = $('#dLeg').value, from = $('#dFrom').value, to = $('#dTo').value;
+  if (!from || !to) return toast('Choose From and To', 'bad');
+  const exp = dExp(), sc = exp.filter(b => D.scanned.has(b.code)), out = exp.filter(b => !D.scanned.has(b.code));
+  const expBags = uniq(exp.map(b => b.bag_code).filter(Boolean)), outBags = expBags.filter(c => !D.bags.has(c));
+  if (!sc.length) return toast('Scan at least one bundle', 'bad');
+  let reason = '';
+  if (out.length || outBags.length) {
+    beep('bad'); flash('bad');
+    reason = await ask({
+      title: '⚠ Short against the bundle list',
+      html: `<div class="verdict bad">${out.length} bundle(s) / ${sumQ(out)} units ${outBags.length ? `and ${outBags.length} bag(s) ` : ''}have not been scanned.</div>
+        ${outBags.length ? `<p><b>Bags not scanned:</b> ${outBags.map(bagShort).join(', ')}</p>` : ''}
+        ${out.length ? `<div class="tw" style="max-height:240px"><table><thead><tr><th>Cut</th><th>Bundle</th><th>Size</th><th class="n">Qty</th><th>Bag</th></tr></thead><tbody>${out.map(b => `<tr><td>${esc(cutName(D.cuts.find(c => c.id === b.cut_id)))}</td><td>#${b.bundle_no}</td><td>${esc(b.size)}</td><td class="n">${b.qty}</td><td>${bagShort(b.bag_code)}</td></tr>`).join('')}</tbody></table></div>` : ''}
+        <label class="f" style="margin-top:12px">Reason for dispatching short (required)<textarea id="shReason" placeholder="e.g. Remaining bundles to follow on next delivery"></textarea></label>`,
+      buttons: [{ label: 'Keep scanning', val: null, cls: 'sec' }, { label: 'Dispatch short', val: () => $('#shReason').value.trim(), cls: 'bad', check: () => { if (!$('#shReason').value.trim()) { toast('Enter a reason', 'bad'); return false; } return true; } }]
+    });
+    if (reason === null) return;
+  }
+  try {
+    const dn = mkDN();
+    const scBags = expBags.filter(c => D.bags.has(c));
+    const [del] = await Store.insert('cw_deliveries', [{ dn_no: dn, leg, from_party: from, to_party: to, status: 'DISPATCHED', dispatched_by: me(), dispatched_short: !!(out.length || outBags.length), short_reason: reason, cut_refs: D.cuts.map(c => c.cut_ref).join(', '), bundles_expected: exp.length, bundles_sent: sc.length, units_sent: sumQ(sc), bags_sent: scBags.length, wrong_count: 0 }]);
+    const cutOf = id => D.cuts.find(c => c.id === id);
+    const items = exp.map(b => { const c = cutOf(b.cut_id); return { delivery_id: del.id, item_type: 'BUNDLE', code: b.code, cut_id: b.cut_id, cut_ref: c.cut_ref, style: c.style, colour: c.colour, cut_no: c.cut_no, bundle_no: b.bundle_no, size: b.size, qty: b.qty, component: b.component || c.component || '', bag_code: b.bag_code, lay_no: b.lay_no || null, dyelot: b.dyelot || null, sobar_from: b.sobar_from || null, sobar_to: b.sobar_to || null, dispatched: D.scanned.has(b.code), received: false }; })
+      .concat(expBags.map(code => { const b = exp.find(x => x.bag_code === code), c = cutOf(b.cut_id); return { delivery_id: del.id, item_type: 'BAG', code, cut_id: c.id, cut_ref: c.cut_ref, style: c.style, colour: c.colour, cut_no: c.cut_no, bag_code: code, dispatched: D.bags.has(code), received: false }; }));
+    const saved = await Store.insert('cw_delivery_items', items);
+    await Store.update('cw_bundles', { code: sc.map(b => b.code) }, { location: L.transit, holder: to });
+    say('d', `Delivery note ${dn} created — ${sc.length} bundles to ${to}`, 'ok');
+    dReset(); await loadCuts(); dCutOptions(); renderD();
+    doPrint(deliveryDoc(del, saved, []), 'doc');
+  } catch (e) { toast('Could not save: ' + e.message, 'bad', 6000); }
+}
+
+/* ---------- delivery note document ---------- */
+function deliveryDoc(del, items, ex = []) {
+  const L = LEGS[del.leg], rec = del.status !== 'DISPATCHED';
+  const bundles = items.filter(i => i.item_type === 'BUNDLE'), bags = items.filter(i => i.item_type === 'BAG');
+  const sent = bundles.filter(i => i.dispatched).sort((a, b) => (a.cut_ref > b.cut_ref ? 1 : -1) || a.bundle_no - b.bundle_no);
+  const notSent = bundles.filter(i => !i.dispatched);
+  const sentBags = bags.filter(i => i.dispatched);
+  const byCut = group(sent, 'cut_ref');
+  let h = `<div class="doc"><div class="dh"><div><div class="dt">CUT WORK DELIVERY NOTE</div><div style="font-size:12pt">${esc(L.name)}</div></div><div class="dq">${qrSvg(del.dn_no)}<div>${esc(del.dn_no)}</div></div></div>
+  <table class="kv"><tr><td><b>DN no:</b> ${esc(del.dn_no)}</td><td><b>Date:</b> ${fmtD(del.created_at)}</td><td><b>Dispatched by:</b> ${esc(del.dispatched_by)}</td></tr>
+  <tr><td><b>From:</b> ${esc(del.from_party)}</td><td><b>To:</b> ${esc(del.to_party)}</td><td><b>Status:</b> ${esc(statusText(del))}</td></tr>
+  ${del.vehicle_reg || del.driver ? `<tr><td><b>Vehicle:</b> ${esc(del.vehicle_reg || '—')}</td><td><b>Driver:</b> ${esc(del.driver || '—')}</td><td>${del.approved_by ? '<b>Approved by:</b> ' + esc(del.approved_by) : ''}</td></tr>` : ''}</table>
+  ${del.status === 'CANCELLED' ? `<div class="alert">CANCELLED ${fmtD(del.cancelled_at)} by ${esc(del.cancelled_by)} — ${esc(del.cancel_reason || '')}</div>` : ''}
+  <div class="tot">Bags: ${sentBags.length} &nbsp;·&nbsp; Bundles: ${sent.length} &nbsp;·&nbsp; Units: ${sumQ(sent)}</div>`;
+  const balJobs = del.balance?.jobs || [];
+  if (del.dispatched_short && balJobs.length) h += `<div class="alert">Ready bags left behind: ${esc(balJobs.flatMap(j => j.ready_left.bags).map(bagShort).join(', '))}. Reason: ${esc(del.short_reason)}</div>`;
+  else if (del.dispatched_short) h += `<div class="alert">SHORT DISPATCH — ${notSent.length} bundle(s) / ${sumQ(notSent)} units on the bundle list not sent${bags.length - sentBags.length ? `, ${bags.length - sentBags.length} bag(s) not sent` : ''}. Reason: ${esc(del.short_reason)}</div>`;
+  for (const [ref, rows] of Object.entries(byCut)) {
+    const f = rows[0], sizes = group(rows, 'size');
+    const dc = CUTS.find(c => c.id === f.cut_id);
+    h += `<h4>${esc(f.style)} · ${esc(f.colour)} · ${dc ? esc(cutTag(dc)) + (dc.po_no ? ' · PO ' + esc(dc.po_no) : '') : 'Cut ' + esc(f.cut_no)}${f.component ? ' · ' + esc(f.component) : ''}</h4>
+    <div style="font-size:9pt">Size summary: ${Object.entries(sizes).map(([s, r]) => `<b>${esc(s)}</b> ${r.length} bdl / ${sumQ(r)} u`).join(' &nbsp;|&nbsp; ')}</div>
+    <table><thead><tr><th>Bag</th><th>Bundle</th><th>Lay</th><th>Dye</th><th>Size</th><th>Range</th><th>Qty</th>${rec ? '<th>Received</th>' : '<th style="width:20mm">Rcvd ✓</th>'}</tr></thead><tbody>
+    ${rows.map(r => `<tr><td>${bagShort(r.bag_code)}</td><td>#${r.bundle_no}</td><td>${esc(r.lay_no || '')}</td><td>${esc(r.dyelot || '')}</td><td>${esc(r.size)}</td><td>${rangeTxt(r)}</td><td>${r.qty}</td><td>${rec ? (r.received ? '✓' : '<b>✗ MISSING</b>') : ''}</td></tr>`).join('')}
+    <tr><td colspan="6"><b>Total</b></td><td><b>${sumQ(rows)}</b></td><td>${rec ? `${rows.filter(r => r.received).length}/${rows.length}` : ''}</td></tr></tbody></table>`;
+  }
+  if (balJobs.length) {
+    h += `<h4>Balance to follow</h4><table><thead><tr><th>Job</th><th>Order units</th><th>Cut units</th><th>Sent before</th><th>This load</th><th>Cut, still at cutting</th><th>Still to cut</th></tr></thead><tbody>${balJobs.map(j => `<tr><td>${esc(j.job)} · ${esc(j.colour)}</td><td>${j.order_units || '–'}</td><td>${j.cut_total.u}</td><td>${j.sent_before.u}</td><td>${j.sent_now.u}</td><td>${j.ready_left.u + j.at_sorting.u + j.unbagged.u}</td><td>${j.still_to_cut ?? '–'}</td></tr>`).join('')}</tbody></table>`;
+    const ap = del.balance?.approvals || [];
+    if (ap.length) h += `<h4>Supervisor approvals</h4><div style="font-size:9pt">${ap.map(a => `${esc(a.what)} — <b>${esc(a.sup)}</b>`).join('<br>')}</div>`;
+  }
+  if (notSent.length) h += `<h4>Not dispatched (short against bundle list)</h4><table><thead><tr><th>Cut</th><th>Bundle</th><th>Size</th><th>Qty</th><th>Received</th></tr></thead><tbody>${notSent.map(r => `<tr><td>${esc(r.style)} ${esc(r.colour)} C${esc(r.cut_no)}</td><td>#${r.bundle_no}</td><td>${esc(r.size)}</td><td>${r.qty}</td><td>${r.received ? 'Arrived anyway ✓' : ''}</td></tr>`).join('')}</tbody></table>`;
+  if (rec) {
+    const miss = sent.filter(r => !r.received), missBags = sentBags.filter(b => !b.received);
+    h += `<h4>Receipt</h4><table class="kv"><tr><td><b>Received by:</b> ${esc(del.received_by)}</td><td><b>At:</b> ${fmtD(del.received_at)}</td><td><b>Result:</b> ${esc(statusText(del))}</td></tr></table>
+    <div class="tot">Received: ${sentBags.filter(b => b.received).length}/${sentBags.length} bags · ${sent.length - miss.length}/${sent.length} bundles · ${sumQ(sent.filter(r => r.received))}/${sumQ(sent)} units</div>`;
+    if (miss.length || missBags.length) h += `<div class="alert">DELIVERED SHORT — missing ${miss.length} bundle(s) / ${sumQ(miss)} units${missBags.length ? ' and bags ' + missBags.map(b => bagShort(b.code)).join(', ') : ''}</div>`;
+    if (ex.length) h += `<h4>Wrong / unknown items received</h4><table><thead><tr><th>Label</th><th>Issue</th><th>Detail</th></tr></thead><tbody>${ex.map(e => `<tr><td>${esc(e.code)}</td><td>${esc(e.type.replace(/_/g, ' '))}</td><td>${esc(e.detail)}</td></tr>`).join('')}</tbody></table>`;
+    if (del.receive_notes) h += `<p><b>Notes:</b> ${esc(del.receive_notes)}</p>`;
+  }
+  h += `<div class="sig"><div>Dispatched by</div><div>Driver / transport</div><div>Received by</div><div>Date & time</div></div></div>`;
+  return h;
+}
+
+/* =====================================================================
+   RECEIVE
+   ===================================================================== */
+let R = { del: null, items: [], got: new Set(), gotBags: new Set(), ex: [] };
+async function showReceive() { await loadPending(); renderR(); }
+async function loadPending() {
+  const ds = await Store.list('cw_deliveries', { status: 'DISPATCHED' }, { order: 'created_at' });
+  const filt = ME.station !== 'CUT' && ME.party;
+  const mine = filt ? ds.filter(d => d.to_party === ME.party) : ds;
+  $('#rPending').innerHTML = (mine.length ? `<div class="tw"><table><thead><tr><th>DN</th><th>Dispatched</th><th>From → To</th><th>Cuts</th><th class="n">Bags</th><th class="n">Bundles</th><th></th></tr></thead><tbody>${mine.map(d => `<tr><td><b>${esc(d.dn_no)}</b></td><td class="muted">${fmtD(d.created_at)}</td><td>${esc(d.from_party)} → ${esc(d.to_party)}</td><td>${esc(d.cut_refs)}</td><td class="n">${d.bags_sent}</td><td class="n">${d.bundles_sent}</td><td><button class="btn sm" data-dn="${esc(d.dn_no)}">Receive</button></td></tr>`).join('')}</tbody></table></div>`
+    : `<p class="muted">No deliveries in transit${filt ? ' to ' + esc(ME.party) : ''}.</p>`) + (filt && ds.length > mine.length ? `<p class="muted">${ds.length - mine.length} other delivery(ies) in transit to other locations.</p>` : '');
+  $$('#rPending [data-dn]').forEach(b => b.onclick = () => rOpen(b.dataset.dn));
+}
+async function rOpen(dn) {
+  const del = await Store.one('cw_deliveries', { dn_no: dn });
+  if (!del) return say('r', `Delivery note ${dn} not found`, 'bad');
+  if (del.status !== 'DISPATCHED') { say('r', `${dn} was already received (${statusText(del)}) on ${fmtD(del.received_at)}`, 'warn'); return viewDelivery(del); }
+  if (R.del && R.del.id !== del.id && (R.got.size || R.ex.length) && !await ask({ title: 'Switch delivery note?', html: `<p>Scans for ${esc(R.del.dn_no)} have not been completed and will be discarded.</p>`, buttons: [{ label: 'Stay', val: false, cls: 'sec' }, { label: 'Switch', val: true, cls: 'bad' }] })) return;
+  if (ME.station !== 'CUT' && ME.party && del.to_party !== ME.party && !await ask({ title: 'Different destination', html: `<p>${esc(dn)} is addressed to <b>${esc(del.to_party)}</b>, not ${esc(ME.party)}.</p>`, buttons: [{ label: 'Cancel', val: false, cls: 'sec' }, { label: 'Receive anyway', val: true, cls: 'warn' }] })) return;
+  R = { del, items: await Store.list('cw_delivery_items', { delivery_id: del.id }), got: new Set(), gotBags: new Set(), ex: [] };
+  say('r', `Loaded ${dn} from ${del.from_party} — scan the bags and bundles`, 'ok'); renderR();
+}
+async function rScan(code) {
+  if (code.startsWith('DN-')) return rOpen(code);
+  if (!R.del) return say('r', 'Scan or select the delivery note first', 'bad');
+  if (code.startsWith('BAG-')) {
+    const it = R.items.find(i => i.item_type === 'BAG' && i.code === code);
+    if (!it) {
+      if (R.ex.some(e => e.code === code)) return say('r', `${code} already recorded as wrong`, 'info');
+      const bag = await Store.one('cw_bags', { code });
+      const cut = bag ? await getCut(bag.cut_id) : null;
+      R.ex.push({ code, type: bag ? 'WRONG_BAG' : 'UNKNOWN', detail: bag ? `Bag ${bagShort(code)} of ${cutName(cut)} — not on this delivery note` : 'Label not found in system', cut_id: bag ? bag.cut_id : null });
+      say('r', bag ? `WRONG BAG: ${bagShort(code)} of ${cutName(cut)} is not on this delivery` : `Unknown label ${code} — recorded`, 'bad'); return renderR();
+    }
+    if (R.gotBags.has(code)) return say('r', `${bagShort(code)} already scanned`, 'info');
+    R.gotBags.add(code);
+    let extra = '';
+    if ($('#rBagAll').checked) { const inside = R.items.filter(i => i.item_type === 'BUNDLE' && i.bag_code === code && i.dispatched); inside.forEach(i => R.got.add(i.code)); extra = ` — ${inside.length} bundles confirmed`; }
+    say('r', `${bagShort(code)} ✓${extra}`, 'ok'); return renderR();
+  }
+  code = parseCode(code).code;
+  const it = R.items.find(i => i.item_type === 'BUNDLE' && i.code === code);
+  if (it) {
+    if (R.got.has(code)) return say('r', `Bundle #${it.bundle_no} already scanned`, 'info');
+    R.got.add(code);
+    if (!it.dispatched) say('r', `Bundle #${it.bundle_no} was listed as NOT SENT but has arrived — recorded as received`, 'warn');
+    else say('r', `#${it.bundle_no} · ${it.size} · ${it.qty} ✓`, 'ok');
+    return renderR();
+  }
+  if (R.ex.some(e => e.code === code)) return say('r', 'Already recorded as a wrong bundle', 'info');
+  const g = await Store.one('cw_bundles', { code });
+  if (!g) { R.ex.push({ code, type: 'UNKNOWN', detail: 'Label not found in system', cut_id: null }); say('r', `Unknown label ${code} — recorded`, 'bad'); return renderR(); }
+  const c = await getCut(g.cut_id);
+  const dnCuts = uniq(R.items.map(i => i.cut_id)), dnStyles = uniq(R.items.map(i => i.style));
+  const type = dnCuts.includes(g.cut_id) ? 'NOT_ON_DN' : dnStyles.includes(c.style) ? 'WRONG_CUT' : 'WRONG_STYLE';
+  const why = { NOT_ON_DN: 'same cut but not listed on this delivery note', WRONG_CUT: 'same style, different cut', WRONG_STYLE: 'different style — not on this delivery' }[type];
+  const detail = `${c.style} · ${c.colour} · Cut ${c.cut_no} · bundle #${g.bundle_no} · ${g.size} · ${g.qty} units (${why})`;
+  R.ex.push({ code, type, detail, cut_id: g.cut_id });
+  say('r', `WRONG BUNDLE: ${detail}`, 'bad'); renderR();
+}
+function renderR() {
+  const box = $('#rBody');
+  if (!R.del) { box.innerHTML = ''; return; }
+  const disp = R.items.filter(i => i.item_type === 'BUNDLE' && i.dispatched), got = disp.filter(i => R.got.has(i.code)), miss = disp.filter(i => !R.got.has(i.code));
+  const bagsD = R.items.filter(i => i.item_type === 'BAG' && i.dispatched), missBags = bagsD.filter(i => !R.gotBags.has(i.code));
+  const extra = R.items.filter(i => i.item_type === 'BUNDLE' && !i.dispatched && R.got.has(i.code));
+  const L = LEGS[R.del.leg];
+  box.innerHTML = `<div class="card">
+    <div class="row"><h2 style="margin:0">${esc(R.del.dn_no)}</h2><span class="tag pri">${esc(L.name)}</span><span class="muted">${esc(R.del.from_party)} → ${esc(R.del.to_party)} · sent ${fmtD(R.del.created_at)} by ${esc(R.del.dispatched_by)}</span></div>
+    ${R.del.dispatched_short ? `<p class="tag warn" style="margin-top:8px">Dispatched short: ${esc(R.del.short_reason)}</p>` : ''}
+    <div class="kpis" style="margin-top:12px">
+      <div class="kpi ${missBags.length ? 'warn' : 'ok'}"><b>${bagsD.length - missBags.length}/${bagsD.length}</b><span>Bags received</span></div>
+      <div class="kpi ${miss.length ? 'warn' : 'ok'}"><b>${got.length}/${disp.length}</b><span>Bundles received</span></div>
+      <div class="kpi"><b>${sumQ(got)}/${sumQ(disp)}</b><span>Units received</span></div>
+      <div class="kpi ${R.ex.length ? 'bad' : ''}"><b>${R.ex.length}</b><span>Wrong / unknown</span></div>
+    </div>
+    <div class="row"><button class="btn sec" id="rCancel">Cancel</button><span class="sp"></span><button class="btn big ${miss.length || missBags.length || R.ex.length ? 'warn' : 'ok'}" id="rDone">${miss.length || missBags.length ? `Complete — delivered short (${miss.length})` : 'Complete — all received'}</button></div>
+  </div>
+  ${R.ex.length ? `<div class="card"><h2 style="color:var(--bad)">Wrong / unknown items</h2><div class="tw"><table><thead><tr><th>Label</th><th>Issue</th><th>Detail</th><th></th></tr></thead><tbody>${R.ex.map((e, i) => `<tr><td>${esc(e.code)}</td><td><span class="tag bad">${esc(e.type.replace(/_/g, ' '))}</span></td><td>${esc(e.detail)}</td><td><button class="btn sec sm" data-unex="${i}">Undo</button></td></tr>`).join('')}</tbody></table></div></div>` : ''}
+  ${extra.length ? `<div class="card"><h2>Arrived although listed as not sent</h2><p class="muted">${extra.map(i => `#${i.bundle_no} (${esc(i.size)}, ${i.qty})`).join(', ')}</p></div>` : ''}
+  ${miss.length || missBags.length ? `<div class="card"><h2>Not yet received</h2>
+    ${missBags.length ? `<p><b>Bags:</b> ${missBags.map(b => `<span class="tag warn">${bagShort(b.code)} · ${esc(b.style)}</span>`).join(' ')}</p>` : ''}
+    ${miss.length ? `<div class="tw"><table><thead><tr><th>Style / cut</th><th>Bag</th><th>Bundle</th><th>Size</th><th class="n">Qty</th></tr></thead><tbody>${miss.slice(0, 400).map(i => `<tr><td>${esc(i.style)} ${esc(i.colour)} C${esc(i.cut_no)}</td><td>${bagShort(i.bag_code)}</td><td>#${i.bundle_no}</td><td>${esc(i.size)}</td><td class="n">${i.qty}</td></tr>`).join('')}</tbody></table></div>` : ''}</div>` : ''}`;
+  $$('#rBody [data-unex]').forEach(b => b.onclick = () => { R.ex.splice(+b.dataset.unex, 1); renderR(); });
+  $('#rCancel').onclick = async () => { if ((R.got.size || R.ex.length) && !await ask({ title: 'Discard scans?', html: '<p>Nothing will be saved for this delivery note.</p>', buttons: [{ label: 'Keep', val: false, cls: 'sec' }, { label: 'Discard', val: true, cls: 'bad' }] })) return; R = { del: null, items: [], got: new Set(), gotBags: new Set(), ex: [] }; renderR(); };
+  $('#rDone').onclick = rComplete;
+}
+async function rComplete() {
+  if (!needName()) return;
+  const del = R.del, L = LEGS[del.leg];
+  const disp = R.items.filter(i => i.item_type === 'BUNDLE' && i.dispatched), miss = disp.filter(i => !R.got.has(i.code));
+  const bagsD = R.items.filter(i => i.item_type === 'BAG' && i.dispatched), missBags = bagsD.filter(i => !R.gotBags.has(i.code));
+  const short = !!(miss.length || missBags.length);
+  if (short) { beep('bad'); flash('bad'); }
+  const notes = await ask({
+    title: short ? '⚠ Confirm short delivery' : 'Confirm delivery received',
+    html: `${short ? `<div class="verdict bad">Delivered short: ${miss.length} bundle(s) / ${sumQ(miss)} units${missBags.length ? `, ${missBags.length} bag(s)` : ''} not received.</div>` : '<div class="verdict ok">All bags and bundles on the delivery note have been received.</div>'}
+      ${R.ex.length ? `<div class="verdict warn">${R.ex.length} wrong/unknown item(s) will be recorded against this delivery.</div>` : ''}
+      <label class="f">Notes (optional)<textarea id="rNotes" placeholder="e.g. Driver notified, supplier to check"></textarea></label>`,
+    buttons: [{ label: 'Back', val: null, cls: 'sec' }, { label: short ? 'Record as SHORT' : 'Confirm received', val: () => $('#rNotes').value.trim(), cls: short ? 'bad' : 'ok' }]
+  });
+  if (notes === null) return;
+  try {
+    const gotB = R.items.filter(i => i.item_type === 'BUNDLE' && R.got.has(i.code));
+    const rcvAt = now();
+    await Store.update('cw_delivery_items', { delivery_id: del.id, code: [...R.got, ...R.gotBags] }, { received: true, received_at: rcvAt });
+    if (R.ex.length) await Store.insert('cw_exceptions', R.ex.map(e => ({ delivery_id: del.id, dn_no: del.dn_no, code: e.code, type: e.type, detail: e.detail, cut_id: e.cut_id, party: del.to_party, reported_by: me() })));
+    const patch = { status: short ? 'RECEIVED_SHORT' : 'RECEIVED_COMPLETE', received_by: me(), received_at: rcvAt, receive_notes: notes, bundles_received: gotB.length, units_received: sumQ(gotB), bags_received: bagsD.length - missBags.length, bundles_missing: miss.length, wrong_count: R.ex.length };
+    await Store.update('cw_deliveries', { id: del.id }, patch);
+    await Store.update('cw_bundles', { code: gotB.map(i => i.code) }, { location: L.dest, holder: del.to_party });
+    await Store.update('cw_bundles', { code: miss.map(i => i.code) }, { location: L.short, holder: del.to_party });
+    const fDel = { ...del, ...patch }, fItems = R.items.map(i => ({ ...i, received: R.got.has(i.code) || R.gotBags.has(i.code) })), fEx = R.ex.map(e => ({ ...e }));
+    const cutIds = uniq(R.items.map(i => i.cut_id));
+    R = { del: null, items: [], got: new Set(), gotBags: new Set(), ex: [] };
+    say('r', `${fDel.dn_no} recorded as ${statusText(fDel)}`, short ? 'warn' : 'ok');
+    $('#rBody').innerHTML = `<div class="card"><div class="verdict ${short ? 'bad' : 'ok'}">${esc(fDel.dn_no)} — ${esc(statusText(fDel))}${fEx.length ? ` · ${fEx.length} wrong item(s) recorded` : ''}</div>
+      <div class="row"><button class="btn sec" id="rPrint">Print receipt</button>${cutIds.map(id => { const c = CUTS.find(x => x.id === id); return `<button class="btn ${fDel.leg === 'PRINT_TO_SEW' ? '' : 'sec'}" data-rc="${id}">Recon: ${esc(c ? cutName(c) : 'cut')}</button>`; }).join('')}</div></div>`;
+    $('#rPrint').onclick = () => doPrint(deliveryDoc(fDel, fItems, fEx), 'doc');
+    $$('#rBody [data-rc]').forEach(b => b.onclick = async () => { await go('recon'); $('#rcCut').value = b.dataset.rc; reconCut(b.dataset.rc); });
+    await loadPending();
+  } catch (e) { toast('Could not save: ' + e.message, 'bad', 6000); }
+}
+
+/* =====================================================================
+   DELIVERY NOTES LIST
+   ===================================================================== */
+let DL = [];
+async function showDeliveries() { DL = await Store.list('cw_deliveries', {}, { order: 'created_at', limit: 500 }); renderDL(); }
+function renderDL() {
+  const leg = $('#dlLeg').value, st = $('#dlSt').value, q = $('#dlQ').value.trim().toUpperCase();
+  const rows = DL.filter(d => (!leg || d.leg === leg) && (!st || d.status === st) && (!q || [d.dn_no, d.cut_refs, d.from_party, d.to_party].join(' ').toUpperCase().includes(q)));
+  $('#dlRows').innerHTML = rows.map(d => `<tr><td><b>${esc(d.dn_no)}</b></td><td class="muted">${fmtD(d.created_at)}</td><td>${esc(LEGS[d.leg].name)}</td><td>${esc(d.from_party)} → ${esc(d.to_party)}</td><td style="max-width:220px">${esc(d.cut_refs)}</td><td class="n">${d.bundles_sent}</td><td class="n">${d.bundles_received ?? '–'}</td><td>${statusTag(d)}</td><td><button class="btn sec sm" data-v="${d.id}">View</button></td></tr>`).join('') || '<tr><td colspan="9" class="muted">No delivery notes.</td></tr>';
+  $$('#dlRows [data-v]').forEach(b => b.onclick = () => viewDelivery(DL.find(d => d.id === b.dataset.v)));
+}
+async function viewDelivery(del) {
+  const items = await Store.list('cw_delivery_items', { delivery_id: del.id });
+  const ex = await Store.list('cw_exceptions', { delivery_id: del.id });
+  openModal(`<div class="row" style="margin-bottom:10px"><h2 style="margin:0">${esc(del.dn_no)}</h2>${statusTag(del)}<span class="sp"></span><button class="btn sm" id="vPrint">Print</button><button class="btn sec sm" id="vClose">Close</button></div>${deliveryDoc(del, items, ex)}`);
+  $('#vPrint').onclick = () => { closeModal(); doPrint(deliveryDoc(del, items, ex), 'doc'); };
+  $('#vClose').onclick = closeModal;
+}
+
+/* =====================================================================
+   RECON
+   ===================================================================== */
+let RC = null;
+const cAll = c => (c?.parts?.length ? c.parts : [{ no: 0, name: 'Bundle' }]);
+const cPrint = c => { const all = cAll(c).map(p => p.no); return c?.print_parts?.length ? c.print_parts.filter(n => all.includes(n)) : all; };
+const cName = (c, no) => cAll(c).find(p => p.no === no)?.name || 'Part ' + no;
+const RCV_RES = { OK: 'Received', WRONG_JOB: 'Wrong job — quarantined', PRINTER_MISMATCH: 'Received from another printer', NOT_DISPATCHED: 'Left cutting without a DN', PART_NOT_PRINTED: 'Unprinted part came from printer', SKIPPED_PRINTER: 'Print part skipped the printer', DUPLICATE: 'Duplicate ticket', UNKNOWN: 'Unknown ticket', FOUND: 'Found after reported missing' };
+const daysAgo = d => d ? Math.floor((Date.now() - new Date(d)) / 864e5) : null;
+async function showRecon() {
+  await loadCuts(); cutOptions($('#rcCut'), RC?.cut.id || '');
+  const [ds, inv] = await Promise.all([Store.list('cw_deliveries', {}, { order: 'created_at', limit: 400 }), Store.list('cw_investigations', { status: 'OPEN' }, { order: 'created_at' })]);
+  const iss = ds.filter(d => d.status === 'RECEIVED_SHORT' || d.dispatched_short || d.wrong_count > 0);
+  $('#rcIssues').innerHTML = (inv.length ? `<h3 class="sub" style="margin-top:0">Open investigations</h3><div class="tw" style="margin-bottom:12px"><table><thead><tr><th>Investigation</th><th>Job</th><th>From</th><th class="n">Missing</th><th>Opened</th><th></th></tr></thead><tbody>${inv.map(x => `<tr><td><b>${esc(x.inv_no)}</b></td><td>${esc(cutName(CUTS.find(c => c.id === x.cut_id)))}</td><td>${esc(x.printer)}${x.printer_dn ? ' · ' + esc(x.printer_dn) : ''}</td><td class="n">${x.missing_bundles} / ${x.missing_units} pcs</td><td class="muted">${fmtD(x.created_at)}</td><td><button class="btn sec sm" data-inv="${x.id}">Open</button></td></tr>`).join('')}</tbody></table></div>` : '')
+    + (iss.length ? `<h3 class="sub">Delivery notes with issues</h3><div class="tw"><table><thead><tr><th>DN</th><th>Date</th><th>Movement</th><th>From → To</th><th>Cuts</th><th>Status</th><th></th></tr></thead><tbody>${iss.map(d => `<tr><td><b>${esc(d.dn_no)}</b></td><td class="muted">${fmtD(d.created_at)}</td><td>${esc(LEGS[d.leg].name)}</td><td>${esc(d.from_party)} → ${esc(d.to_party)}</td><td>${esc(d.cut_refs)}</td><td>${statusTag(d)}</td><td><button class="btn sec sm" data-v="${d.id}">View</button></td></tr>`).join('')}</tbody></table></div>` : (inv.length ? '' : '<p class="muted">No open investigations or problem deliveries.</p>'));
+  $$('#rcIssues [data-v]').forEach(b => b.onclick = () => viewDelivery(iss.find(d => d.id === b.dataset.v)));
+  $$('#rcIssues [data-inv]').forEach(b => b.onclick = () => viewInvestigation(inv.find(x => x.id === b.dataset.inv)));
+  if (RC) renderRC();
+}
+/* Reconciliation of one job: every bundle x part, where it is now and where it was last seen */
+async function reconCut(id) {
+  if (!id) return;
+  const cut = await getCut(id);
+  const [bundles, parts, bags, rItemsOwn, rItemsHere, receipts, invs] = await Promise.all([
+    Store.list('cw_bundles', { cut_id: id }, { order: 'bundle_no', asc: true }),
+    Store.list('cw_bundle_parts', { cut_id: id }),
+    Store.list('cw_bags', { cut_id: id }),
+    Store.list('cw_receipt_items', { cut_id: id }),
+    Store.list('cw_receipt_items', { receipt_cut_id: id }),
+    Store.list('cw_receipts', { cut_id: id }, { order: 'created_at', asc: true }),
+    Store.list('cw_investigations', { cut_id: id }, { order: 'created_at', asc: true })
+  ]);
+  const dns = uniq(bags.map(b => b.dn_no).filter(Boolean));
+  const dels = dns.length ? (await Store.list('cw_deliveries', { dn_no: dns })).filter(d => d.status !== 'CANCELLED') : [];
+  const bagBy = Object.fromEntries(bags.map(b => [b.code, b]));
+  const delBy = Object.fromEntries(dels.map(d => [d.dn_no, d]));
+  const pBy = {}; parts.forEach(p => pBy[p.bundle_id + ':' + p.part_no] = p);
+  const pn = cPrint(cut), all = cAll(cut);
+  const rows = [];
+  for (const b of bundles) for (const p of all) {
+    const printed = pn.includes(p.no), st = pBy[b.id + ':' + p.no], bag = bagBy[b.bag_code], del = bag?.dn_no ? delBy[bag.dn_no] : null;
+    let stage, cls, last;
+    const cutSeen = `Cut — lay ${b.lay_no || '?'}${b.dyelot ? ', dye ' + b.dyelot : ''}`;
+    const bagSeen = bag ? `${bagShort(bag.code)} by ${bag.closed_by || bag.opened_by || '?'}${bag.station ? ' at ' + bag.station : ''}${bag.closed_at ? ', closed ' + fmtD(bag.closed_at) : ' (still open)'}` : '';
+    const dnSeen = del ? `${del.dn_no} to ${del.to_party}, ${fmtD(del.created_at)}${del.vehicle_reg ? ', ' + del.vehicle_reg : ''}` : '';
+    if (st?.status === 'RECEIVED') { stage = 'Received'; cls = 'ok'; last = `${st.receipt_no || ''} ${fmtD(st.received_at)}${st.flag && st.flag !== 'OK' ? ' — ' + (RCV_RES[st.flag] || st.flag) : ''}`; }
+    else if (st?.status === 'QUARANTINE') { stage = 'Quarantined'; cls = 'warn'; last = `Found on ${st.receipt_no} with another job — held`; }
+    else if (st?.status === 'MISSING') { stage = 'MISSING'; cls = 'bad'; last = `${st.inv_no || 'Investigation'} — last seen: ${printed ? (dnSeen || bagSeen || cutSeen) : cutSeen}`; }
+    else if (printed && ['TRANSIT_PRINT', 'PRINTER'].includes(b.location)) { const d = daysAgo(del?.created_at); stage = 'At printer'; cls = d != null && d >= 5 ? 'warn' : 'pri'; last = `${dnSeen || 'Dispatched to ' + b.holder}${d != null ? ` (${d} day${d === 1 ? '' : 's'})` : ''}`; }
+    else if (printed && b.location === 'MISSING') { stage = 'MISSING'; cls = 'bad'; last = dnSeen || bagSeen || cutSeen; }
+    else if (printed && b.bag_code) { stage = bag?.status === 'CLOSED' ? 'Bagged, ready' : 'At sorting'; cls = 'warn'; last = bagSeen; }
+    else if (printed) { stage = 'Cut, not bagged'; cls = 'warn'; last = cutSeen; }
+    else { stage = 'Not yet received'; cls = 'warn'; last = cutSeen + ' (unprinted — goes straight to sewing)'; }
+    rows.push({ b, p, printed, stage, cls, last, bag, del, st });
+  }
+  RC = { cut, bundles, rows, receipts, invs, exOwn: rItemsOwn.filter(i => i.result !== 'OK' && i.receipt_cut_id !== id), exHere: rItemsHere.filter(i => i.result !== 'OK'), dels };
+  renderRC();
+}
+function renderRC() {
+  const { cut, bundles, rows, receipts, invs, exOwn, exHere, dels } = RC;
+  const all = cAll(cut), pn = cPrint(cut);
+  const u = a => a.reduce((s, r) => s + (+r.b.qty || 0), 0);
+  const complete = bundles.filter(b => rows.filter(r => r.b.id === b.id).every(r => r.stage === 'Received'));
+  const missing = rows.filter(r => r.stage === 'MISSING'), quarantined = rows.filter(r => r.stage === 'Quarantined');
+  const unacc = rows.filter(r => r.stage !== 'Received');
+  const orderU = Object.values(cut.order_sizes || {}).reduce((a, b) => a + b, 0) || cut.order_total || 0;
+  const verdict = !bundles.length ? '' : missing.length ? `<div class="verdict bad">${missing.length} panel bundles / ${u(missing)} pieces MISSING · ${complete.length}/${bundles.length} bundles complete on the sewing floor</div>`
+    : unacc.length ? `<div class="verdict warn">In progress — ${complete.length}/${bundles.length} bundles complete on the sewing floor · ${unacc.length} panel bundles still on their way</div>`
+    : `<div class="verdict ok">Reconciled — all ${bundles.length} bundles (${u(bundles.map(b => ({ b })))} garments) complete on the sewing floor</div>`;
+  // funnel per part
+  const funnel = all.map(p => {
+    const r = rows.filter(x => x.p.no === p.no), printed = pn.includes(p.no);
+    const c = k => r.filter(k);
+    const bagged = printed ? c(x => x.b.bag_code || x.b.location !== 'CUTTING') : [];
+    const sent = printed ? c(x => x.del || ['TRANSIT_PRINT', 'PRINTER', 'MISSING', 'SEWING'].includes(x.b.location)) : [];
+    const rec = c(x => x.stage === 'Received');
+    return `<tr><td><b>${esc(p.name)}</b> <span class="muted">${printed ? 'printed' : 'unprinted'}</span></td><td class="n">${r.length}</td><td class="n">${printed ? bagged.length : '—'}</td><td class="n">${printed ? sent.length : '—'}</td><td class="n">${printed ? c(x => x.stage === 'At printer').length : '—'}</td><td class="n"><b>${rec.length}</b></td><td class="n">${c(x => x.stage === 'Quarantined').length || ''}</td><td class="n" style="color:${c(x => x.stage === 'MISSING').length ? 'var(--bad)' : 'inherit'};font-weight:700">${c(x => x.stage === 'MISSING').length || ''}</td><td class="n">${r.length - rec.length}</td></tr>`;
+  }).join('');
+  // by size
+  const sizes = uniq([...bundles.map(b => String(b.size)), ...Object.keys(cut.order_sizes || {})]).sort(sizeSort);
+  const bySize = sizes.map(s => { const bs = bundles.filter(b => String(b.size) === s), cp = complete.filter(b => String(b.size) === s), o = (cut.order_sizes || {})[s] || 0; return `<tr><td>${esc(s)}</td><td class="n">${o || '–'}</td><td class="n">${sumQ(bs)}</td><td class="n"><b>${sumQ(cp)}</b></td><td class="n">${sumQ(bs) - sumQ(cp) || ''}</td><td class="n">${o ? Math.max(0, o - sumQ(bs)) : '–'}</td></tr>`; }).join('');
+  // unaccounted grouped by stage
+  const order = ['MISSING', 'Quarantined', 'At printer', 'Bagged, ready', 'At sorting', 'Cut, not bagged', 'Not yet received'];
+  const grp = order.map(st => ({ st, r: unacc.filter(x => x.stage === st) })).filter(g => g.r.length);
+  const ex = [...exHere.map(i => ({ ...i, dir: i.cut_id && i.cut_id !== cut.id ? 'Another job\'s bundle found in this job\'s receipt' : '' })), ...exOwn.map(i => ({ ...i, dir: 'This job\'s bundle found in another job\'s receipt' }))];
+  $('#rcBody').innerHTML = `<div class="card">
+    <div class="row"><h2 style="margin:0">${esc(cutName(cut))}</h2><span class="muted">${cut.po_no ? 'PO ' + esc(cut.po_no) : ''}${cut.printer ? ' · printer ' + esc(cut.printer) : ''} · parts: ${all.map(p => esc(p.name) + (pn.includes(p.no) ? ' 🖨' : '')).join(', ')}</span><span class="sp"></span><button class="btn sec sm" id="rcCsv">Export CSV</button><button class="btn sec sm" id="rcPrint">Print report</button></div>
+    <div style="margin-top:12px">${verdict}</div>
+    <div class="kpis">
+      <div class="kpi"><b>${orderU || '–'}</b><span>Order units</span></div><div class="kpi"><b>${sumQ(bundles)}</b><span>Cut (garments)</span></div>
+      <div class="kpi ok"><b>${sumQ(complete)}</b><span>Complete on sewing</span></div>
+      <div class="kpi ${unacc.length ? 'warn' : 'ok'}"><b>${unacc.length}</b><span>Panel bundles not in</span></div>
+      <div class="kpi ${missing.length ? 'bad' : ''}"><b>${missing.length} / ${u(missing)}</b><span>Missing bdl / pcs</span></div>
+      <div class="kpi ${ex.length ? 'bad' : ''}"><b>${ex.length}</b><span>Exceptions</span></div></div>
+    <h3 class="sub" style="margin-top:4px">Panel bundles by stage (🖨 = printed part)</h3>
+    <div class="tw" style="max-height:none"><table><thead><tr><th>Part</th><th class="n">Cut</th><th class="n">Bagged</th><th class="n">Dispatched</th><th class="n">At printer</th><th class="n">Received</th><th class="n">Quarantine</th><th class="n">Missing</th><th class="n">Not in</th></tr></thead><tbody>${funnel}</tbody></table></div>
+    <h3 class="sub">By size — garments</h3>
+    <div class="tw" style="max-height:none"><table><thead><tr><th>Size</th><th class="n">Order</th><th class="n">Cut</th><th class="n">Complete on sewing</th><th class="n">Not complete</th><th class="n">Still to cut</th></tr></thead><tbody>${bySize}<tr><td><b>Total</b></td><td class="n"><b>${orderU || '–'}</b></td><td class="n"><b>${sumQ(bundles)}</b></td><td class="n"><b>${sumQ(complete)}</b></td><td class="n"><b>${sumQ(bundles) - sumQ(complete)}</b></td><td class="n"><b>${orderU ? Math.max(0, orderU - sumQ(bundles)) : '–'}</b></td></tr></tbody></table></div></div>
+  <div class="card"><h2>Unaccounted for — where each was last seen</h2>${grp.length ? grp.map(g => `<h3 class="sub">${esc(g.st)} — ${g.r.length} panel bundles / ${u(g.r)} pcs</h3><div class="tw" style="max-height:300px"><table><thead><tr><th>Bundle</th><th>Part</th><th>Size</th><th class="n">Qty</th><th>Lay / dye</th><th>Last seen</th></tr></thead><tbody>${g.r.map(x => `<tr><td>#${x.b.bundle_no}</td><td>${esc(x.p.name)}</td><td>${esc(x.b.size)}</td><td class="n">${x.b.qty}</td><td class="muted">${esc([x.b.lay_no, x.b.dyelot].filter(Boolean).join(' / '))}</td><td><span class="tag ${x.cls}">${esc(x.stage)}</span> ${esc(x.last)}</td></tr>`).join('')}</tbody></table></div>`).join('') : '<p class="muted">Every panel bundle of this job has been received on the sewing floor.</p>'}</div>
+  <div class="card"><h2 ${ex.length ? 'style="color:var(--bad)"' : ''}>Exceptions at receiving</h2>${ex.length ? `<div class="tw"><table><thead><tr><th>When</th><th>Receipt</th><th>Bundle</th><th>Issue</th><th>Detail</th><th>Released by</th></tr></thead><tbody>${ex.map(i => `<tr><td class="muted">${fmtD(i.created_at)}</td><td>${esc(i.receipt_no || '')}</td><td>${i.bundle_no ? '#' + i.bundle_no : esc(i.code || '')} ${esc(i.part_name || '')}<br><span class="muted">${esc(cutName(CUTS.find(c => c.id === i.cut_id)) || '')}</span></td><td><span class="tag ${['WRONG_JOB', 'UNKNOWN', 'DUPLICATE'].includes(i.result) ? 'bad' : 'warn'}">${esc(RCV_RES[i.result] || i.result)}</span>${i.dir ? `<br><span class="muted">${esc(i.dir)}</span>` : ''}</td><td>${esc(i.detail || '')}</td><td>${esc(i.released_by || '')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">None.</p>'}</div>
+  <div class="card"><h2>Movements</h2>
+    <h3 class="sub" style="margin-top:0">Dispatched from cutting</h3>${dels.length ? `<div class="tw" style="max-height:none"><table><thead><tr><th>DN</th><th>Date</th><th>To</th><th>Vehicle</th><th class="n">Bags</th><th class="n">Bundles</th><th class="n">Units</th><th></th></tr></thead><tbody>${dels.map(d => `<tr><td><b>${esc(d.dn_no)}</b></td><td class="muted">${fmtD(d.created_at)}</td><td>${esc(d.to_party)}</td><td>${esc(d.vehicle_reg || '')}</td><td class="n">${d.bags_sent ?? ''}</td><td class="n">${d.bundles_sent}</td><td class="n">${d.units_sent}</td><td><button class="btn sec sm" data-dv="${d.id}">View</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">Nothing dispatched yet.</p>'}
+    <h3 class="sub">Received on the sewing floor</h3>${receipts.length ? `<div class="tw" style="max-height:none"><table><thead><tr><th>Receipt</th><th>Date</th><th>From</th><th>Their note</th><th class="n">Panel bundles</th><th class="n">Pieces</th><th class="n">Flagged</th><th>Result</th></tr></thead><tbody>${receipts.map(r => `<tr><td><b>${esc(r.receipt_no)}</b></td><td class="muted">${fmtD(r.created_at)}</td><td>${esc(r.printer)}</td><td>${esc(r.printer_dn || '')}</td><td class="n">${r.bundles_received ?? ''}</td><td class="n">${r.units_received ?? ''}</td><td class="n">${r.flagged || ''}</td><td>${r.status === 'OPEN' ? '<span class="tag pri">In progress</span>' : r.outcome === 'MISSING' ? '<span class="tag bad">Missing</span>' : r.outcome === 'BALANCE_TO_FOLLOW' ? '<span class="tag warn">Balance to follow</span>' : '<span class="tag ok">Complete</span>'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">Nothing received yet.</p>'}
+    ${invs.length ? `<h3 class="sub">Investigations</h3><div class="chips">${invs.map(x => `<button class="chip" data-iv="${x.id}">${esc(x.inv_no)} · ${x.missing_bundles} missing · ${x.status === 'OPEN' ? 'OPEN' : 'closed: ' + esc(x.outcome || '')}</button>`).join('')}</div>` : ''}</div>`;
+  $$('#rcBody [data-dv]').forEach(b => b.onclick = () => viewDelivery(dels.find(d => d.id === b.dataset.dv)));
+  $$('#rcBody [data-iv]').forEach(b => b.onclick = () => viewInvestigation(invs.find(x => x.id === b.dataset.iv)));
+  $('#rcCsv').onclick = () => download(`recon_${cut.cut_ref}.csv`, [csvLine(['Job', 'Colour', 'PO', 'Bundle', 'Part', 'Printed part', 'Size', 'Qty', 'Lay', 'Dyelot', 'Sobar from', 'Sobar to', 'Bag', 'Bagged by', 'DN', 'Dispatched', 'Printer', 'Stage', 'Last seen / received'])]
+    .concat(rows.map(r => csvLine([cut.job_no || cut.cut_no, cut.colour, cut.po_no || cut.order_no, r.b.bundle_no, r.p.name, r.printed ? 'Y' : 'N', r.b.size, r.b.qty, r.b.lay_no, r.b.dyelot, r.b.sobar_from, r.b.sobar_to, r.b.bag_code, r.bag?.closed_by || r.b.bagged_by, r.del?.dn_no, r.del ? fmtD(r.del.created_at) : '', r.del?.to_party, r.stage, r.last]))).join('\n'));
+  $('#rcPrint').onclick = () => {
+    const body = $('#rcBody').cloneNode(true); body.querySelectorAll('button').forEach(b => b.remove()); body.querySelectorAll('.tw').forEach(t => t.style.maxHeight = 'none');
+    doPrint(`<div class="doc"><div class="dh"><div><div class="dt">CUT WORK RECONCILIATION</div><div>${esc(cutName(cut))}</div></div><div style="font-size:9pt">${fmtD(now())}</div></div>${body.innerHTML}</div>`, 'doc');
+  };
+}
+
+/* ---------- investigations ---------- */
+async function viewInvestigation(inv) {
+  if (!inv) return;
+  inv = await Store.one('cw_investigations', { id: inv.id }) || inv;
+  const c = CUTS.find(x => x.id === inv.cut_id) || await getCut(inv.cut_id);
+  const now_ = await Store.list('cw_bundle_parts', { cut_id: inv.cut_id });
+  const stNow = m => now_.find(p => p.bundle_id === m.bundle_id && p.part_no === m.part_no);
+  const rows = (inv.missing || []).map(m => { const s = stNow(m); return { ...m, found: s && s.status === 'RECEIVED' }; });
+  const found = rows.filter(r => r.found);
+  const html = `<div class="doc"><div class="dh"><div><div class="dt">INVESTIGATION ${esc(inv.inv_no)}</div><div>${esc(cutName(c))}${c?.po_no ? ' · PO ' + esc(c.po_no) : ''}</div></div><div style="font-size:9pt">${inv.status === 'OPEN' ? '<b>OPEN</b>' : 'CLOSED ' + fmtD(inv.closed_at)}</div></div>
+    <table class="kv"><tr><td><b>Opened:</b> ${fmtD(inv.created_at)} by ${esc(inv.opened_by)}</td><td><b>From:</b> ${esc(inv.printer)}${inv.source === 'CUTTING' ? ' (unprinted panels)' : ''}</td><td><b>Their note:</b> ${esc(inv.printer_dn || '—')} (says delivered in full)</td></tr>
+    <tr><td><b>Receipt:</b> ${esc(inv.receipt_no)}</td><td><b>Missing:</b> ${inv.missing_bundles} panel bundles / ${inv.missing_units} pieces</td><td><b>Found since:</b> ${found.length}</td></tr></table>
+    ${inv.status === 'CLOSED' ? `<div class="alert">Closed by ${esc(inv.closed_by)} — ${esc((inv.outcome || '').replace(/_/g, ' '))}: ${esc(inv.notes || '')}</div>` : ''}
+    <h4>Missing panel bundles — trail</h4>
+    <table><thead><tr><th>Bundle</th><th>Part</th><th>Size</th><th>Qty</th><th>Lay / dye</th><th>Sobar</th><th>Bag / packed by</th><th>Left cutting</th><th>Now</th></tr></thead><tbody>
+    ${rows.map(r => `<tr><td>#${r.bundle_no}</td><td>${esc(r.part_name)}</td><td>${esc(r.size)}</td><td>${r.qty}</td><td>${esc([r.lay_no, r.dyelot].filter(Boolean).join(' / '))}</td><td>${r.sobar_from ? r.sobar_from + '–' + r.sobar_to : ''}</td><td>${esc(r.bag_code ? bagShort(r.bag_code) : '')}${r.bagged_by ? ' · ' + esc(r.bagged_by) : ''}</td><td>${r.dn_no ? esc(r.dn_no) + ' · ' + fmtD(r.dispatched_at) + (r.vehicle ? ' · ' + esc(r.vehicle) : '') : (inv.source === 'CUTTING' ? 'unprinted — direct to sewing' : 'not dispatched')}</td><td>${r.found ? '<b>FOUND</b>' : 'missing'}</td></tr>`).join('')}</tbody></table></div>`;
+  openModal(`<div class="row" style="margin-bottom:10px"><h2 style="margin:0">${esc(inv.inv_no)}</h2>${inv.status === 'OPEN' ? '<span class="tag bad">Open</span>' : '<span class="tag">Closed</span>'}<span class="sp"></span>${inv.status === 'OPEN' ? '<button class="btn sm" id="ivClose">Close investigation</button>' : ''}<button class="btn sec sm" id="ivPrint">Print</button><button class="btn sec sm" id="ivRc">Job recon</button><button class="btn sec sm" id="ivX">Close</button></div>${html}`);
+  $('#ivX').onclick = closeModal;
+  $('#ivPrint').onclick = () => { closeModal(); doPrint(html, 'doc'); };
+  $('#ivRc').onclick = async () => { closeModal(); await go('recon'); $('#rcCut').value = inv.cut_id; reconCut(inv.cut_id); };
+  if ($('#ivClose')) $('#ivClose').onclick = async () => {
+    const r = await ask({ title: `Close ${esc(inv.inv_no)}`, html: `<label class="f">Outcome<select id="ivO"><option value="FOUND">Found</option><option value="WRITTEN_OFF">Written off</option><option value="CLAIMED_FROM_VENDOR">Claimed from vendor</option><option value="OTHER">Other</option></select></label>
+      <label class="f">Findings / notes<textarea id="ivN"></textarea></label><label class="f">Supervisor PIN<input id="ivP" type="password" inputmode="numeric" maxlength="6"></label>`,
+      buttons: [{ label: 'Cancel', val: null, cls: 'sec' }, { label: 'Close investigation', val: () => ({ o: $('#ivO').value, n: $('#ivN').value.trim(), p: $('#ivP').value }) }] });
+    if (!r) return;
+    let sup; try { sup = await Store.rpc('cw_supervisor_by_pin', { p_pin: r.p }); } catch (e) { return toast(e.message, 'bad'); }
+    if (!sup) return toast('Supervisor PIN incorrect', 'bad');
+    await Store.update('cw_investigations', { id: inv.id }, { status: 'CLOSED', outcome: r.o, notes: r.n, closed_by: sup, closed_at: now() });
+    toast(`${inv.inv_no} closed`); showReceiving().catch(() => {});
+  };
+}
+
+/* =====================================================================
+   RECEIVING — live view of the Receiving app
+   ===================================================================== */
+let RV_T = null;
+async function showReceiving() {
+  await renderReceiving();
+  clearInterval(RV_T);
+  RV_T = setInterval(() => { if ($('#t-receiving').classList.contains('hidden')) return clearInterval(RV_T); renderReceiving().catch(e => console.warn(e)); }, 30000);
+}
+async function renderReceiving() {
+  await loadCuts();
+  const since = new Date(); since.setHours(0, 0, 0, 0); const S = since.toISOString();
+  const [rcToday, rcOpen, quar, invs, atPr, items] = await Promise.all([
+    Store.list('cw_receipts', {}, { order: 'created_at', gte: ['created_at', S] }),
+    Store.list('cw_receipts', { status: 'OPEN' }),
+    Store.list('cw_bundle_parts', { status: 'QUARANTINE' }),
+    Store.list('cw_investigations', {}, { order: 'created_at', limit: 200 }),
+    Store.list('cw_bundles', { location: ['TRANSIT_PRINT', 'PRINTER'] }),
+    Store.list('cw_receipt_items', {}, { order: 'created_at', gte: ['created_at', S] })
+  ]);
+  const cn = id => cutName(CUTS.find(c => c.id === id)) || '—';
+  const flagged = items.filter(i => i.result !== 'OK');
+  const openInv = invs.filter(x => x.status === 'OPEN');
+  const tOnly = d => new Date(d).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+  // printers: what is out, how old
+  const bags = atPr.length ? await Store.list('cw_bags', { code: uniq(atPr.map(b => b.bag_code).filter(Boolean)) }) : [];
+  const dns = uniq(bags.map(b => b.dn_no).filter(Boolean));
+  const dels = dns.length ? await Store.list('cw_deliveries', { dn_no: dns }) : [];
+  const sentAt = b => { const g = bags.find(x => x.code === b.bag_code); return dels.find(d => d.dn_no === g?.dn_no)?.created_at; };
+  const byPr = group(atPr, 'holder');
+  $('#rvBody').innerHTML = `<div class="kpis">
+      <div class="kpi"><b>${rcToday.length}</b><span>Receipts today</span></div>
+      <div class="kpi"><b>${rcToday.reduce((s, r) => s + (r.bundles_received || 0), 0) || items.filter(i => i.result !== 'DUPLICATE' && i.result !== 'UNKNOWN' && i.result !== 'WRONG_JOB').length}</b><span>Panel bundles received today</span></div>
+      <div class="kpi ${flagged.length ? 'warn' : ''}"><b>${flagged.length}</b><span>Flagged today</span></div>
+      <div class="kpi ${quar.length ? 'bad' : 'ok'}"><b>${quar.length}</b><span>In quarantine</span></div>
+      <div class="kpi ${openInv.length ? 'bad' : 'ok'}"><b>${openInv.length}</b><span>Open investigations</span></div>
+      <div class="kpi"><b>${sumQ(atPr)}</b><span>Units out at printers</span></div></div>
+    <div class="card"><h2 ${openInv.length ? 'style="color:var(--bad)"' : ''}>Investigations</h2>${invs.length ? `<div class="tw"><table><thead><tr><th>Investigation</th><th>Opened</th><th>Job</th><th>From</th><th>Their note</th><th class="n">Missing</th><th>Status</th><th></th></tr></thead><tbody>${invs.map(x => `<tr><td><b>${esc(x.inv_no)}</b></td><td class="muted">${fmtD(x.created_at)}</td><td>${esc(cn(x.cut_id))}</td><td>${esc(x.printer)}</td><td>${esc(x.printer_dn || '')}</td><td class="n">${x.missing_bundles} / ${x.missing_units} pcs</td><td>${x.status === 'OPEN' ? `<span class="tag bad">Open · ${daysAgo(x.created_at)} d</span>` : `<span class="tag">${esc((x.outcome || 'Closed').replace(/_/g, ' ').toLowerCase())}</span>`}</td><td><button class="btn sec sm" data-iv="${x.id}">Open</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No investigations.</p>'}</div>
+    <div class="card"><h2>Quarantine</h2>${quar.length ? `<div class="tw"><table><thead><tr><th>Bundle</th><th>Belongs to</th><th>Found on</th><th>When</th></tr></thead><tbody>${quar.map(q => `<tr><td><b>#${q.bundle_no} ${esc(q.part_name)}</b></td><td>${esc(cn(q.cut_id))}</td><td>${esc(q.receipt_no || '')}</td><td class="muted">${fmtD(q.received_at || q.created_at)}</td></tr>`).join('')}</tbody></table></div><p class="muted">Released in the Receiving app with a supervisor PIN.</p>` : '<p class="muted">Nothing in quarantine.</p>'}</div>
+    <div class="card"><h2>Out at printers</h2>${Object.keys(byPr).length ? `<div class="tw"><table><thead><tr><th>Printer</th><th>Job</th><th class="n">Bundles</th><th class="n">Units</th><th>Oldest sent</th></tr></thead><tbody>${Object.entries(byPr).flatMap(([pr, bs]) => Object.entries(group(bs, 'cut_id')).map(([id, x]) => { const old = x.map(sentAt).filter(Boolean).sort()[0]; const d = daysAgo(old); return `<tr><td>${esc(pr)}</td><td>${esc(cn(id))}</td><td class="n">${x.length}</td><td class="n">${sumQ(x)}</td><td>${old ? fmtD(old) + (d >= 5 ? ` <span class="tag warn">${d} days</span>` : ` <span class="muted">${d} d</span>`) : ''}</td></tr>`; })).join('')}</tbody></table></div>` : '<p class="muted">Nothing out at printers.</p>'}</div>
+    <div class="card"><h2>Receipts today</h2>${rcToday.length ? `<div class="tw"><table><thead><tr><th>Receipt</th><th>Time</th><th>From</th><th>Their note</th><th>Job</th><th>Clerk</th><th class="n">Panel bundles</th><th class="n">Pieces</th><th class="n">Flagged</th><th>Result</th></tr></thead><tbody>${[...rcToday].reverse().map(r => `<tr><td><b>${esc(r.receipt_no)}</b></td><td class="muted">${tOnly(r.created_at)}</td><td>${esc(r.printer)}</td><td>${esc(r.printer_dn || '')}</td><td>${esc(cn(r.cut_id))}</td><td>${esc(r.received_by || '')}</td><td class="n">${r.bundles_received ?? ''}</td><td class="n">${r.units_received ?? ''}</td><td class="n">${r.flagged || ''}</td><td>${r.status === 'OPEN' ? '<span class="tag pri">In progress</span>' : r.outcome === 'MISSING' ? '<span class="tag bad">Missing</span>' : r.outcome === 'BALANCE_TO_FOLLOW' ? '<span class="tag warn">Balance to follow</span>' : '<span class="tag ok">Complete</span>'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No receipts today.</p>'}${rcOpen.filter(r => !rcToday.some(x => x.id === r.id)).length ? `<p class="muted">Also still open from earlier: ${rcOpen.filter(r => !rcToday.some(x => x.id === r.id)).map(r => esc(r.receipt_no)).join(', ')}</p>` : ''}</div>
+    <div class="card"><h2>Flagged at receiving today</h2>${flagged.length ? `<div class="tw"><table><thead><tr><th>Time</th><th>Receipt</th><th>Bundle</th><th>Issue</th><th>Detail</th></tr></thead><tbody>${[...flagged].reverse().map(i => `<tr><td class="muted">${tOnly(i.created_at)}</td><td>${esc(i.receipt_no)}</td><td>${i.bundle_no ? '#' + i.bundle_no : esc(i.code)} ${esc(i.part_name || '')}<br><span class="muted">${esc(cn(i.cut_id))}</span></td><td><span class="tag ${['WRONG_JOB', 'UNKNOWN', 'DUPLICATE'].includes(i.result) ? 'bad' : 'warn'}">${esc(RCV_RES[i.result] || i.result)}</span></td><td>${esc(i.detail || '')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">Nothing flagged today.</p>'}</div>`;
+  $$('#rvBody [data-iv]').forEach(b => b.onclick = () => viewInvestigation(invs.find(x => x.id === b.dataset.iv)));
+}
+
+/* =====================================================================
+   SETTINGS
+   ===================================================================== */
+function showSettings() {
+  $('#sDbInfo').innerHTML = Store.live ? `Connected to the Cloudflare D1 database through this site's <b>/api</b>.${Store.user ? ' Signed in as <b>' + esc(Store.user) + '</b>.' : ''}` : 'Demo mode — data is kept in this browser only. Open CutTrack from its website to use the real database.';
+  fillSelect($('#sLayout'), Object.keys(LAYOUTS), k => LAYOUTS[k].name, CFG.layout);
+  $('#sBq').value = CFG.bundleQty;
+  $('#sDemo').classList.toggle('hidden', Store.live);
+  renderParties(); renderStaff();
+}
+async function renderStaff() {
+  let list = [];
+  try { list = await Store.rpc('cw_list_staff'); } catch (e) { $('#stList').innerHTML = `<p class="muted">Could not load staff — run the latest cuttrack_schema.sql (${esc(e.message)})</p>`; return; }
+  $('#stList').innerHTML = list.length ? `<div class="tw" style="max-height:300px"><table><thead><tr><th>Name</th><th>Role</th><th></th></tr></thead><tbody>${list.map(p => `<tr><td><b>${esc(p.name)}</b></td><td>${p.role === 'SUPERVISOR' ? '<span class="tag pri">Supervisor</span>' : p.role === 'DISPATCHER' ? '<span class="tag warn">Dispatcher</span>' : p.role === 'RECEIVER' ? '<span class="tag ok">Receiving</span>' : 'Sorter'}</td><td class="row" style="justify-content:flex-end"><button class="btn sec sm" data-se="${esc(p.name)}" data-sr="${p.role}">Edit</button><button class="btn sec sm" data-sx="${esc(p.name)}" data-sr="${p.role}">Remove</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">Nobody yet — add the first supervisor, then the sorters.</p>';
+  $$('#stList [data-se]').forEach(b => b.onclick = () => { $('#stN').value = b.dataset.se; $('#stR').value = b.dataset.sr; $('#stP').value = ''; $('#stP').focus(); $('#stMsg').textContent = 'Leave PIN empty to keep the current one'; });
+  $$('#stList [data-sx]').forEach(b => b.onclick = async () => {
+    const pin = await ask({ title: `Remove ${esc(b.dataset.sx)}?`, html: `<p>They will no longer be able to sign in. Their past scans stay in the log.</p><label class="f">Supervisor PIN<input id="sxP" type="password" inputmode="numeric" maxlength="6"></label>`, buttons: [{ label: 'Cancel', val: null, cls: 'sec' }, { label: 'Remove', val: () => $('#sxP').value, cls: 'bad' }] });
+    if (pin === null) return;
+    try { await Store.rpc('cw_staff_save', { p_admin_pin: pin, p_name: b.dataset.sx, p_role: b.dataset.sr, p_pin: null, p_active: false }); toast('Removed'); renderStaff(); } catch (e) { toast(e.message, 'bad', 5000); }
+  });
+}
+async function saveStaff() {
+  const name = $('#stN').value.trim(), role = $('#stR').value, pin = $('#stP').value.trim(), admin = $('#stA').value.trim();
+  if (!name) return toast('Enter a name', 'bad');
+  try {
+    await Store.rpc('cw_staff_save', { p_admin_pin: admin, p_name: name, p_role: role, p_pin: pin || null, p_active: true });
+    toast(`${name} saved`); $('#stN').value = ''; $('#stP').value = ''; $('#stMsg').textContent = ''; renderStaff();
+  } catch (e) { toast(e.message, 'bad', 5000); }
+}
+const genericBagLabel = no => ({ code: `BAG-${pad(no, 6)}`, q: '42%', html: `<div style="font-weight:800;font-size:22pt;line-height:1.05">BAG<br>${pad(no, 6)}</div><div class="b" style="margin-top:3mm;font-size:9pt">Job ____________</div><div class="b" style="margin-top:2.5mm;font-size:9pt">Dye ______ Bdls _____</div><div class="b" style="margin-top:2.5mm;font-size:9pt">Sorter ___________</div>` });
+async function printBagRange(first, last) {
+  if (!(first > 0) || !(last >= first)) return toast('Enter a valid range', 'bad');
+  if (last - first > 1999) return toast('At most 2000 labels at a time', 'bad');
+  printLabels(Array.from({ length: last - first + 1 }, (_, i) => genericBagLabel(first + i)), 'bag labels', 'L7165');
+}
+
+/* =====================================================================
+   DISPATCH BOARD — live view of the Dispatch app
+   ===================================================================== */
+let DB_T = null;
+async function showDispatchBoard() {
+  await renderDispatchBoard();
+  clearInterval(DB_T);
+  DB_T = setInterval(() => { if ($('#t-dispatchboard').classList.contains('hidden')) return clearInterval(DB_T); renderDispatchBoard().catch(e => console.warn(e)); }, 30000);
+}
+async function renderDispatchBoard() {
+  await loadCuts();
+  const since = new Date(); since.setHours(0, 0, 0, 0); const S = since.toISOString();
+  const [closed, openBags, loads, active, dscans] = await Promise.all([
+    Store.list('cw_bags', { status: 'CLOSED' }),
+    Store.list('cw_bags', { status: 'OPEN' }),
+    Store.list('cw_deliveries', { leg: 'CUT_TO_PRINT' }, { order: 'created_at', gte: ['created_at', S] }),
+    Store.list('cw_bundles', { location: ['CUTTING', 'TRANSIT_PRINT', 'PRINTER', 'SHORT_AT_PRINTER', 'TRANSIT_SEW'] }),
+    Store.list('cw_scans', {}, { order: 'created_at', gte: ['created_at', S] })
+  ]);
+  const ready = closed.filter(b => b.cut_id);
+  const cutOfId = id => CUTS.find(c => c.id === id);
+  const printerOf = id => cutOfId(id)?.printer || '— no printer set —';
+  const live = loads.filter(d => d.status !== 'CANCELLED');
+  const atPrinter = active.filter(b => ['TRANSIT_PRINT', 'PRINTER'].includes(b.location));
+  const tOnly = d => new Date(d).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+  const hrs = d => Math.round((Date.now() - new Date(d)) / 3600e3);
+  // ready to dispatch, by printer then job
+  const byPr = {}; ready.forEach(b => (byPr[printerOf(b.cut_id)] = byPr[printerOf(b.cut_id)] || []).push(b));
+  // balance per job (jobs with work still in the cutting room or out at the printer)
+  const byCut = group(active, 'cut_id');
+  const alarms = dscans.filter(x => ['DSP_WRONG_PRINTER', 'DSP_OPEN', 'DSP_ALREADY', 'DSP_EMPTY', 'DSP_UNKNOWN', 'DSP_COUNT_CHANGED'].includes(x.result));
+  const sup = dscans.filter(x => ['DSP_OVERRIDE', 'DSP_REMOVED', 'DSP_CANCELLED', 'DSP_ABANDONED'].includes(x.result) || (x.result === 'DSP_DISPATCHED' && x.supervisor));
+  const ALN = { DSP_WRONG_PRINTER: 'Wrong printer', DSP_OPEN: 'Bag not closed', DSP_ALREADY: 'Already dispatched', DSP_EMPTY: 'Empty bag', DSP_UNKNOWN: 'Unused / unknown label', DSP_COUNT_CHANGED: 'Bag changed after closing', DSP_OVERRIDE: 'Override approved', DSP_REMOVED: 'Bag removed from load', DSP_CANCELLED: 'DN cancelled', DSP_ABANDONED: 'Load abandoned', DSP_DISPATCHED: 'Sent with ready bags left' };
+  $('#dbUpd').textContent = 'updated ' + new Date().toLocaleTimeString('en-ZA');
+  $('#dbBody').innerHTML = `<div class="kpis">
+      <div class="kpi"><b>${live.length}</b><span>Loads today</span></div>
+      <div class="kpi"><b>${live.reduce((s, d) => s + (d.bags_sent || 0), 0)}</b><span>Bags dispatched today</span></div>
+      <div class="kpi"><b>${live.reduce((s, d) => s + (d.units_sent || 0), 0)}</b><span>Units dispatched today</span></div>
+      <div class="kpi ${ready.length ? 'warn' : 'ok'}"><b>${ready.length}</b><span>Bags ready, waiting</span></div>
+      <div class="kpi"><b>${openBags.filter(b => b.cut_id).length}</b><span>Bags still at sorting</span></div>
+      <div class="kpi"><b>${sumQ(atPrinter)}</b><span>Units out at printers</span></div></div>
+    <div class="card"><h2>Ready to dispatch</h2>${Object.keys(byPr).length ? Object.entries(byPr).sort().map(([pr, bs]) => {
+      const g = group(bs, 'cut_id');
+      return `<h3 class="sub">${esc(pr)} — ${bs.length} bags · ${bs.reduce((s, b) => s + (b.bundle_count || 0), 0)} bundles · ${bs.reduce((s, b) => s + (b.units || 0), 0)} units</h3>
+        <div class="tw" style="max-height:none"><table><thead><tr><th>Job</th><th>Bags</th><th class="n">Bundles</th><th class="n">Units</th><th>Oldest closed</th></tr></thead><tbody>${Object.entries(g).map(([id, x]) => { const old = x.reduce((m, b) => !m || (b.closed_at && b.closed_at < m) ? b.closed_at : m, null); return `<tr><td><b>${esc(cutName(cutOfId(id)))}</b></td><td>${x.map(b => esc(bagShort(b.code))).join(', ')}</td><td class="n">${x.reduce((s, b) => s + (b.bundle_count || 0), 0)}</td><td class="n">${x.reduce((s, b) => s + (b.units || 0), 0)}</td><td>${old ? `${tOnly(old)}${hrs(old) >= 4 ? ` <span class="tag warn">${hrs(old)} h waiting</span>` : ''}` : ''}</td></tr>`; }).join('')}</tbody></table></div>`;
+    }).join('') : '<p class="muted">No closed bags waiting.</p>'}</div>
+    <div class="card"><h2>Loads today</h2>${loads.length ? `<div class="tw"><table><thead><tr><th>DN</th><th>Time</th><th>Printer</th><th>Vehicle / driver</th><th class="n">Bags</th><th class="n">Bundles</th><th class="n">Units</th><th>By</th><th>Status</th><th></th></tr></thead><tbody>${[...loads].reverse().map(d => `<tr><td><b>${esc(d.dn_no)}</b></td><td class="muted">${tOnly(d.created_at)}</td><td>${esc(d.to_party)}</td><td>${esc([d.vehicle_reg, d.driver].filter(Boolean).join(' · '))}</td><td class="n">${d.bags_sent ?? ''}</td><td class="n">${d.bundles_sent}</td><td class="n">${d.units_sent}</td><td>${esc(d.dispatched_by)}${d.approved_by ? `<br><span class="muted">approved: ${esc(d.approved_by)}</span>` : ''}</td><td>${statusTag(d)}</td><td><button class="btn sec sm" data-dv="${d.id}">View</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No loads yet today.</p>'}</div>
+    <div class="card"><h2>Balance per job</h2><p class="muted" style="margin-top:0">Jobs with work still in the cutting room or out at a printer.</p>${Object.keys(byCut).length ? `<div class="tw"><table><thead><tr><th>Job</th><th>Printer</th><th class="n">Order</th><th class="n">Cut</th><th class="n">At printer</th><th class="n">Ready (bagged)</th><th class="n">At sorting</th><th class="n">Not bagged</th><th class="n">Still to cut</th></tr></thead><tbody>${Object.entries(byCut).map(([id, bs]) => {
+      const c = cutOfId(id) || {}, ord = Object.values(c.order_sizes || {}).reduce((a, b) => a + b, 0) || c.order_total || 0;
+      const readyCodes = new Set(ready.filter(b => b.cut_id === id).map(b => b.code)), openCodes = new Set(openBags.map(b => b.code));
+      const atCut = bs.filter(b => b.location === 'CUTTING');
+      const u = f => sumQ(atCut.filter(f));
+      return `<tr><td><b>${esc(cutName(c))}</b></td><td>${esc(c.printer || '—')}</td><td class="n">${ord || '–'}</td><td class="n">${c.total_units ?? ''}</td><td class="n">${sumQ(bs.filter(b => b.location !== 'CUTTING'))}</td><td class="n">${u(b => readyCodes.has(b.bag_code))}</td><td class="n">${u(b => openCodes.has(b.bag_code))}</td><td class="n">${u(b => !b.bag_code)}</td><td class="n">${ord ? Math.max(0, ord - (c.total_units || 0)) : '–'}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="muted">Nothing in progress.</p>'}</div>
+    <div class="card"><h2>Dispatch alarms & supervisor actions today</h2>${alarms.length + sup.length ? `<div class="tw"><table><thead><tr><th>Time</th><th>Who</th><th>What</th><th>Detail</th><th>Supervisor</th></tr></thead><tbody>${[...alarms, ...sup].sort((a, b) => a.created_at < b.created_at ? 1 : -1).map(x => `<tr><td class="muted">${tOnly(x.created_at)}</td><td>${esc(x.sorter || '')}</td><td><span class="tag ${alarms.includes(x) ? 'bad' : 'warn'}">${ALN[x.result] || x.result}</span></td><td>${esc(x.detail || '')}</td><td>${esc(x.supervisor || '')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">None today.</p>'}</div>`;
+  $$('#dbBody [data-dv]').forEach(b => b.onclick = () => viewDelivery(loads.find(d => d.id === b.dataset.dv)));
+}
+
+/* =====================================================================
+   SORTING — live view of the Sorter app
+   ===================================================================== */
+let SORT_T = null;
+const ALARMS = { WRONG_JOB: 'Wrong job', WRONG_DYELOT: 'Wrong dyelot', NO_JOB: 'Job not loaded', NOT_ON_LIST: 'Not on bundle list', ALREADY_BAGGED: 'Already in another bag', DISPATCHED: 'Already dispatched', UNKNOWN: 'Unknown label', CONFLICT: 'Scan conflict', BAG_IN_USE: 'Bag in use', BAG_DISPATCHED: 'Bag already dispatched', OVERRIDE_BAD_PIN: 'Wrong offline supervisor PIN' };
+const SUPV = { OVERRIDE: 'Alarm cleared', MOVED: 'Bundle moved', BAG_REOPENED: 'Bag reopened', OVERRIDE_VERIFIED: 'Offline PIN confirmed' };
+async function showSorting() {
+  await renderSorting();
+  clearInterval(SORT_T);
+  SORT_T = setInterval(() => { if ($('#t-sorting').classList.contains('hidden')) return clearInterval(SORT_T); renderSorting().catch(e => console.warn(e)); }, 15000);
+}
+async function renderSorting() {
+  await loadCuts();
+  const since = new Date(); since.setHours(0, 0, 0, 0); const S = since.toISOString();
+  const [scans, openBags, atCut, baggedToday, closedToday] = await Promise.all([
+    Store.list('cw_scans', {}, { order: 'created_at', asc: true, gte: ['created_at', S] }),
+    Store.list('cw_bags', { status: 'OPEN' }),
+    Store.list('cw_bundles', { location: 'CUTTING' }),
+    Store.list('cw_bundles', {}, { gte: ['bagged_at', S] }),
+    Store.list('cw_bags', { status: 'CLOSED' }, { gte: ['closed_at', S] })
+  ]);
+  const cutN = id => { const c = CUTS.find(x => x.id === id); return c ? cutName(c) : '—'; };
+  const tOnly = d => new Date(d).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+  const alarms = scans.filter(x => ALARMS[x.result]), supv = scans.filter(x => SUPV[x.result]);
+  const okScans = scans.filter(x => x.result === 'OK' || x.result === 'OK_MOVED');
+  const sorters = uniq([...okScans.map(x => x.sorter), ...alarms.map(x => x.sorter), ...openBags.map(b => b.opened_by)].filter(Boolean)).sort();
+  const live = openBags.filter(b => b.opened_by).map(b => { const bs = atCut.filter(x => x.bag_code === b.code); return { b, n: bs.length, u: sumQ(bs) }; });
+  const byCut = group(atCut, 'cut_id');
+  $('#soUpd').textContent = 'updated ' + new Date().toLocaleTimeString('en-ZA');
+  $('#soBody').innerHTML = `<div class="kpis">
+      <div class="kpi"><b>${baggedToday.length}</b><span>Bundles bagged today</span></div>
+      <div class="kpi"><b>${sumQ(baggedToday)}</b><span>Units bagged today</span></div>
+      <div class="kpi"><b>${closedToday.length}</b><span>Bags closed today</span></div>
+      <div class="kpi"><b>${live.length}</b><span>Bags open now</span></div>
+      <div class="kpi ${alarms.length ? 'bad' : 'ok'}"><b>${alarms.length}</b><span>Alarms today</span></div>
+      <div class="kpi ${alarms.filter(a => a.result === 'WRONG_JOB').length ? 'bad' : ''}"><b>${alarms.filter(a => a.result === 'WRONG_JOB').length}</b><span>Wrong-job scans</span></div></div>
+    <div class="card"><h2>Open bags</h2>${live.length ? `<div class="tw"><table><thead><tr><th>Bag</th><th>Sorter</th><th>Station</th><th>Job</th><th>Dyelot</th><th class="n">Bundles</th><th class="n">Units</th><th>Opened</th></tr></thead><tbody>${live.map(({ b, n, u }) => `<tr><td><b>${esc(bagShort(b.code))}</b></td><td>${esc(b.opened_by)}</td><td>${esc(b.station || '')}</td><td>${b.cut_id ? esc(cutN(b.cut_id)) : '<span class="muted">empty</span>'}</td><td>${esc(b.dyelot || '')}</td><td class="n">${n}</td><td class="n">${u}</td><td class="muted">${tOnly(b.created_at)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No bags open.</p>'}</div>
+    <div class="card"><h2>Sorters today</h2>${sorters.length ? `<div class="tw"><table><thead><tr><th>Sorter</th><th class="n">Bundles</th><th class="n">Units</th><th class="n">Bags closed</th><th class="n">Bundles / hour</th><th class="n">Alarms</th><th>First – last scan</th></tr></thead><tbody>${sorters.map(n => {
+      const ok = okScans.filter(x => x.sorter === n), bt = baggedToday.filter(b => b.bagged_by === n), al = alarms.filter(x => x.sorter === n);
+      const hrs = ok.length > 1 ? (new Date(ok[ok.length - 1].created_at) - new Date(ok[0].created_at)) / 3600e3 : 0;
+      return `<tr><td><b>${esc(n)}</b></td><td class="n">${bt.length}</td><td class="n">${sumQ(bt)}</td><td class="n">${closedToday.filter(b => b.closed_by === n).length}</td><td class="n">${hrs > .1 ? Math.round(ok.length / hrs) : '–'}</td><td class="n">${al.length ? `<span class="tag bad">${al.length}</span>` : '0'}</td><td class="muted">${ok.length ? tOnly(ok[0].created_at) + ' – ' + tOnly(ok[ok.length - 1].created_at) : ''}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="muted">No scans yet today.</p>'}</div>
+    <div class="card"><h2>Alarms & supervisor actions today</h2>${alarms.length + supv.length ? `<div class="tw"><table><thead><tr><th>Time</th><th>Sorter</th><th>Station</th><th>What</th><th>Detail</th><th>Supervisor</th></tr></thead><tbody>${[...alarms, ...supv].sort((a, b) => a.created_at < b.created_at ? 1 : -1).map(x => `<tr><td class="muted">${tOnly(x.created_at)}</td><td>${esc(x.sorter || '')}</td><td>${esc(x.station || '')}</td><td>${ALARMS[x.result] ? `<span class="tag bad">${ALARMS[x.result]}</span>` : `<span class="tag warn">${SUPV[x.result]}</span>`}</td><td>${esc(x.detail || '')}${x.bag_code ? ' <span class="muted">· ' + esc(bagShort(x.bag_code)) + '</span>' : ''}</td><td>${esc(x.supervisor || '')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">None today.</p>'}</div>
+    <div class="card"><h2>Jobs in the cutting room</h2>${Object.keys(byCut).length ? `<div class="tw"><table><thead><tr><th>Job</th><th class="n">Bundles at cutting</th><th class="n">Bagged</th><th class="n">Not bagged</th><th>Not bagged — by lay / dyelot</th></tr></thead><tbody>${Object.entries(byCut).map(([id, bs]) => {
+      const un = bs.filter(b => !b.bag_code), g = {}; un.forEach(b => { const k = [b.lay_no ? 'Lay ' + b.lay_no : '', b.dyelot ? 'Dye ' + b.dyelot : ''].filter(Boolean).join(' · ') || '—'; g[k] = (g[k] || 0) + 1; });
+      return `<tr><td><b>${esc(cutN(id))}</b></td><td class="n">${bs.length}</td><td class="n">${bs.length - un.length}</td><td class="n">${un.length ? `<b>${un.length}</b>` : '<span class="tag ok">all bagged</span>'}</td><td class="muted">${Object.entries(g).map(([k, n]) => `${esc(k)}: ${n}`).join(' &nbsp;|&nbsp; ')}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="muted">No bundles waiting in the cutting room.</p>'}</div>`;
+}
+function renderParties() {
+  const K = { CUTTING: 'Cutting rooms', PRINTER: 'Printers (outwork)', SEWING: 'Sewing floors / lines' };
+  $('#sParties').innerHTML = Object.entries(K).map(([k, t]) => `<div><b style="font-size:13px">${t}</b>
+    <div style="margin:6px 0">${PARTIES.filter(p => p.kind === k).map(p => `<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:4px 0"><span>${esc(p.name)}</span><button class="btn sec sm" data-pd="${p.id}">✕</button></div>`).join('') || '<span class="muted">None</span>'}</div>
+    <div class="row" style="flex-wrap:nowrap"><input data-pk="${k}" placeholder="Add…"><button class="btn sm" data-pa="${k}">Add</button></div></div>`).join('');
+  $$('#sParties [data-pa]').forEach(b => b.onclick = async () => {
+    const k = b.dataset.pa, inp = $(`#sParties [data-pk="${k}"]`), name = inp.value.trim();
+    if (!name) return; if (PARTIES.some(p => p.kind === k && p.name.toLowerCase() === name.toLowerCase())) return toast('Already listed', 'bad');
+    try { await Store.insert('cw_parties', [{ name, kind: k }]); await loadParties(); renderParties(); renderMe(); } catch (e) { toast(e.message, 'bad'); }
+  });
+  $$('#sParties [data-pd]').forEach(b => b.onclick = async () => {
+    const p = PARTIES.find(x => x.id === b.dataset.pd);
+    if (!await ask({ title: 'Remove location?', html: `<p>Remove <b>${esc(p.name)}</b> from the list? Past delivery notes keep the name.</p>`, buttons: [{ label: 'Cancel', val: false, cls: 'sec' }, { label: 'Remove', val: true, cls: 'bad' }] })) return;
+    await Store.del('cw_parties', { id: p.id }); await loadParties(); renderParties(); renderMe();
+  });
+}
+async function loadSample() {
+  const mk = async (h, sizes, bq) => { const bs = []; let n = 0; sizes.forEach(([s, u]) => { let l = u; while (l > 0) { const q = Math.min(bq, l); l -= q; bs.push({ bundle_no: ++n, size: s, qty: q }); } }); return createCut(h, bs); };
+  try {
+    const pr = partiesOf('PRINTER');
+    const c1 = await mk({ style: 'ST1001', colour: 'NAVY', cut_no: '57', order_no: 'PO4410', component: 'FRONTS', printer: pr[0] || '' }, [['S', 60], ['M', 100], ['L', 80]], 20);
+    await mk({ style: 'ST2040', colour: 'BLACK', cut_no: '12', order_no: 'PO4422', component: 'BACKS', printer: pr[1] || pr[0] || '' }, [['M', 60], ['L', 60]], 20);
+    const bags = await Store.insert('cw_bags', [1, 2, 3].map(i => ({ code: `BAG-${c1.cut_ref}-${pad(i, 2)}`, cut_id: c1.id, bag_no: i })));
+    const bs = await Store.list('cw_bundles', { cut_id: c1.id }, { order: 'bundle_no', asc: true });
+    for (const b of bs) await Store.update('cw_bundles', { id: b.id }, { bag_code: bags[Math.min(2, Math.floor((b.bundle_no - 1) / 4))].code });
+    await loadCuts(); toast('Sample cuts loaded — ST1001 is already bagged');
+  } catch (e) { toast(e.message, 'bad', 5000); }
+}
+
+/* =====================================================================
+   SHELL
+   ===================================================================== */
+const TABS = { cuts: ['Cuts & labels', showCuts], sorting: ['Sorting', showSorting], bag: ['Bagging (office)', showBag], dispatchboard: ['Dispatch board', showDispatchBoard], dispatch: ['Dispatch (office)', showDispatch], receiving: ['Receiving', showReceiving], receive: ['Receive (office)', showReceive], deliveries: ['Delivery notes', showDeliveries], recon: ['Recon & investigations', showRecon], settings: ['Settings', showSettings] };
+async function go(t) {
+  await Scanner.stop();
+  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  $$('main>section').forEach(s => s.classList.toggle('hidden', s.id !== 't-' + t));
+  try { await TABS[t][1](); } catch (e) { console.error(e); toast(e.message, 'bad', 6000); }
+}
+function renderMe() {
+  $('#meName').value = ME.name; $('#meStation').value = ME.station;
+  const list = ME.station === 'PRINT' ? partiesOf('PRINTER') : ME.station === 'SEW' ? partiesOf('SEWING') : [];
+  if (list.length && !list.includes(ME.party)) { ME.party = list[0]; saveMe(); }
+  if (!list.length) ME.party = '';
+  fillSelect($('#meParty'), list, v => v, ME.party);
+  $('#meParty').classList.toggle('hidden', !list.length);
+}
+async function init() {
+  await Store.init();
+  $('#modeTag').textContent = Store.live ? '● Live database' : 'Demo mode — this device only';
+  try {
+    await loadParties();
+    if (!Store.live && !Store.mem.cw_staff.length) { Store.mem.cw_staff.push(...DEMO_STAFF()); Store.persist(); }
+    if (!Store.live && !PARTIES.length) { await Store.insert('cw_parties', [['Cutting Room', 'CUTTING'], ['Printer A', 'PRINTER'], ['Printer B', 'PRINTER'], ['Sewing Floor', 'SEWING']].map(([name, kind]) => ({ name, kind }))); await loadParties(); }
+  } catch (e) { toast('Database error: ' + e.message, 'bad', 8000); }
+  renderMe();
+  $('#nav').innerHTML = Object.entries(TABS).map(([k, [l]]) => `<button data-t="${k}">${l}</button>`).join('');
+  $$('#nav button').forEach(b => b.onclick = () => go(b.dataset.t));
+  bindScan('bg', bgScan); bindScan('d', dScan); bindScan('r', rScan);
+  // header
+  $('#meName').onchange = e => { ME.name = e.target.value.trim(); saveMe(); };
+  $('#meStation').onchange = e => { ME.station = e.target.value; saveMe(); renderMe(); if (!D.scanned.size && !D.cuts.length) D.init = false; };
+  $('#meParty').onchange = e => { ME.party = e.target.value; saveMe(); };
+  // cuts
+  $('#cAddSize').onclick = () => addSizeRow(); $('#cBq').oninput = calcPrev; $('#cSave').onclick = saveManualCut;
+  $('#cutSearch').oninput = renderCutRows;
+  $('#csvTpl').onclick = () => download('bundle_list_template.csv', 'style,colour,cut_no,bundle_no,lay,dyelot,size,qty,order_no,component,printer\nST1001,NAVY,57,1,1,26,S,20,PO4410,FRONTS,Printer A\nST1001,NAVY,57,2,1,26,S,20,PO4410,FRONTS,Printer A\nST1001,NAVY,57,3,1,26,M,20,PO4410,FRONTS,Printer A\n');
+  $('#csvFile').onchange = async e => { const f = e.target.files[0]; if (!f) return; $('#csvPrev').innerHTML = '<p class="muted">Reading…</p>'; try { await readImport(f); renderCsvPrev(); } catch (err) { console.error(err); IMP = null; $('#csvPrev').innerHTML = `<span class="tag bad">${esc(err.message)}</span>`; } };
+  // bag
+  $('#bgCut').onchange = () => bgLoad($('#bgCut').value);
+  $('#bgOnlyUn').onchange = renderBag; $('#bgNew').onclick = bgNew; $('#bgCheck').onclick = bgCheck;
+  $('#bgReprint').onclick = () => printLabels(BG.bags.map(g => bagLabel(BG.cut, g)), 'bag labels');
+  $('#bgBl').onclick = () => printLabels(BG.bundles.map(b => bundleLabel(BG.cut, b)), 'bundle labels');
+  // dispatch
+  $('#dLeg').onchange = async () => { if (D.scanned.size && !await ask({ title: 'Change movement?', html: '<p>Current scans will be cleared.</p>', buttons: [{ label: 'Keep', val: false, cls: 'sec' }, { label: 'Change', val: true, cls: 'bad' }] })) { $('#dLeg').value = $('#dLeg').value === 'CUT_TO_PRINT' ? 'PRINT_TO_SEW' : 'CUT_TO_PRINT'; return; } dReset(); dParties(); dCutOptions(); renderD(); };
+  $('#dFrom').onchange = () => { if (dLeg().src === 'PRINTER') { D.scanned.clear(); D.bags.clear(); renderD(); } };
+  $('#dAddCut').onclick = async () => { const id = $('#dCutSel').value; if (id) await dAddCut(await getCut(id)); };
+  // deliveries
+  ['#dlLeg', '#dlSt'].forEach(s => $(s).onchange = renderDL); $('#dlQ').oninput = renderDL;
+  // recon
+  $('#rcGo').onclick = () => reconCut($('#rcCut').value);
+  // settings
+  $('#sTest').onclick = async () => {
+    $('#sMsg').textContent = 'Checking…';
+    try { const r = await fetch('/api/health', { cache: 'no-store' }); const j = await r.json(); $('#sMsg').textContent = j.ok ? `✓ Connected — ${j.jobs} jobs in the database${j.user ? ' · signed in as ' + j.user : ''}` : '✗ ' + (j.error || r.status); }
+    catch (e) { $('#sMsg').textContent = '✗ No database API here — ' + (location.protocol === 'file:' ? 'opened as a local file (demo mode)' : e.message); }
+  };
+  $('#sLayout').onchange = e => { CFG.layout = e.target.value; saveCfg(); };
+  $('#sBq').onchange = e => { CFG.bundleQty = Math.max(1, +e.target.value || 20); saveCfg(); $('#cBq').value = CFG.bundleQty; };
+  $('#sTestLbl').onclick = () => { const L = LAYOUTS[CFG.layout]; doPrint(labelSheets(Array.from({ length: L.cols * L.rows }, (_, i) => ({ code: 'TEST-' + pad(i + 1, 2), html: `<div class="a">Alignment test</div><div class="c">#${i + 1}</div>` })), CFG.layout, 1, true), 'labels'); };
+  $('#sSample').onclick = loadSample;
+  $('#stSave').onclick = saveStaff;
+  $('#rvRef').onclick = () => renderReceiving().catch(e => toast(e.message, 'bad'));
+  $('#dbRef').onclick = () => renderDispatchBoard().catch(e => toast(e.message, 'bad'));
+  $('#soRef').onclick = () => renderSorting().catch(e => toast(e.message, 'bad'));
+  $('#blGo').onclick = async () => { const n = Math.max(1, Math.min(2000, +$('#blN').value || 0)); try { const first = +(await Store.rpc('cw_reserve_bag_numbers', { n })); toast(`Reserved BAG ${pad(first, 6)} – ${pad(first + n - 1, 6)}`); $('#blF').value = first; $('#blT').value = first + n - 1; printBagRange(first, first + n - 1); } catch (e) { toast(e.message, 'bad', 5000); } };
+  $('#blRe').onclick = () => printBagRange(+$('#blF').value, +$('#blT').value);
+  $('#sClear').onclick = async () => { if (!await ask({ title: 'Clear demo data?', html: '<p>All cuts, bags and delivery notes on this device will be deleted.</p>', buttons: [{ label: 'Cancel', val: false, cls: 'sec' }, { label: 'Clear', val: true, cls: 'bad' }] })) return; localStorage.removeItem('cw_demo'); location.reload(); };
+  $('#mbg').onclick = e => { if (e.target.id === 'mbg') { /* click outside does nothing to avoid lost answers */ } };
+  go(ME.station === 'CUT' ? 'cuts' : 'receive');
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

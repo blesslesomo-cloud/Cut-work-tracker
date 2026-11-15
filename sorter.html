@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f4e79">
+<meta name="mobile-web-app-capable" content="yes">
+<title>CutTrack Sorter</title>
+<script src="cw-store.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root{--bg:#eef1f5;--card:#fff;--ink:#141a24;--mut:#5d6778;--line:#dde2e9;--pri:#1f4e79;--pri2:#e5edf7;--ok:#15803d;--okbg:#e3f5e9;--bad:#c0261a;--badbg:#fde9e7;--warn:#b45309;--warnbg:#fff1dc;--r:12px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);overscroll-behavior:none}
+button{font:inherit}
+.wrap{max-width:560px;margin:0 auto;padding:10px 12px 90px}
+.top{position:sticky;top:0;z-index:20;background:var(--pri);color:#fff;display:flex;align-items:center;gap:10px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top))}
+.top .who{flex:1;min-width:0}
+.top .who b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .who span{font-size:12px;opacity:.8}
+.net{font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:#ffffff26;white-space:nowrap}
+.net.off{background:#c0261a}.net.q{background:#b45309}
+.ib{background:#ffffff1f;border:0;color:#fff;width:42px;height:42px;border-radius:10px;font-size:20px;cursor:pointer}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:2px solid var(--pri);background:var(--pri);color:#fff;padding:12px 16px;border-radius:10px;font-weight:700;cursor:pointer;min-height:48px}
+.btn.sec{background:#fff;color:var(--pri)}
+.btn.ok{background:var(--ok);border-color:var(--ok)}
+.btn.bad{background:var(--bad);border-color:var(--bad)}
+.btn.ghost{background:transparent;border-color:#ffffffaa;color:#fff}
+.btn.big{min-height:58px;font-size:18px;width:100%}
+.btn:disabled{opacity:.45}
+.row{display:flex;gap:8px;align-items:center}
+.row>.btn{flex:1}
+input,select{font:inherit;padding:12px;border:1px solid var(--line);border-radius:10px;width:100%;background:#fff;color:var(--ink)}
+label.f{display:block;font-size:13px;color:var(--mut);margin-bottom:10px}
+label.f input{margin-top:4px}
+.muted{color:var(--mut);font-size:13px}
+h2{font-size:18px;margin:0 0 10px}
+/* bag panel */
+.bag{border-radius:var(--r);padding:16px;margin-bottom:10px;color:#fff;background:#4a5568}
+.bag.on{background:var(--pri)}
+.bag .bn{font-size:30px;font-weight:800;letter-spacing:.5px;line-height:1.1}
+.bag .job{font-size:21px;font-weight:800;margin-top:6px}
+.bag .sub{font-size:14px;opacity:.9;margin-top:2px}
+.bag .cnt{display:flex;gap:18px;margin-top:12px}
+.bag .cnt div b{display:block;font-size:30px;line-height:1}
+.bag .cnt div span{font-size:12px;opacity:.85}
+.bag.empty .bn{font-size:22px}
+.bag.bump{animation:bump .35s}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.025)}100%{transform:scale(1)}}
+/* last scan */
+.last{border-radius:var(--r);padding:12px 14px;margin-bottom:10px;font-weight:700;font-size:17px;border:2px solid var(--line);background:#fff;min-height:54px}
+.last.ok{border-color:var(--ok);background:var(--okbg);color:var(--ok)}
+.last.warn{border-color:var(--warn);background:var(--warnbg);color:var(--warn)}
+.last.bad{border-color:var(--bad);background:var(--badbg);color:var(--bad)}
+.last.info{color:var(--mut)}
+.last small{display:block;font-weight:500;font-size:13px;color:var(--ink);opacity:.8}
+/* camera */
+#reader{width:100%;border-radius:10px;overflow:hidden;background:#000;display:none;margin-bottom:8px}
+#reader.on{display:block}
+#reader video{object-fit:cover}
+/* progress */
+.lay{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.lay:last-child{border-bottom:0}
+.bar{grid-column:1/-1;height:7px;background:#e7ebf0;border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok)}
+.lay.cur{font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:13px;background:#fafbfc}
+.chip b{font-size:14px}
+.feed div{padding:7px 10px;border-left:4px solid var(--line);margin-bottom:4px;background:#fff;border-radius:4px;font-size:13.5px}
+.feed .ok{border-color:var(--ok)}.feed .bad{border-color:var(--bad);background:var(--badbg)}.feed .warn{border-color:var(--warn);background:var(--warnbg)}.feed .info{border-color:#98a2b3}
+.feed span{color:var(--mut);font-size:12px;margin-right:6px}
+/* login */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.tile{background:#fff;border:2px solid var(--line);border-radius:12px;padding:16px 12px;text-align:left;cursor:pointer;min-height:70px}
+.tile b{display:block;font-size:17px}
+.tile span{font-size:12px;color:var(--mut)}
+/* overlays */
+.ov{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:16px;background:#000a}
+.ov.on{display:flex}
+.ovc{width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:16px;padding:20px;background:#fff;color:var(--ink)}
+.ov.bad .ovc{background:var(--bad);color:#fff}
+.ov.warn .ovc{background:#c96a05;color:#fff}
+.ov.ok .ovc{background:var(--ok);color:#fff}
+.ovt{font-size:28px;font-weight:900;line-height:1.1;margin-bottom:10px;letter-spacing:.3px}
+.ov.info .ovt{font-size:21px}
+.ovm{font-size:17px;line-height:1.45}
+.ovm b{font-size:19px}
+.ovm table{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+.ovm td,.ovm th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+.ovb{display:grid;gap:8px;margin-top:18px}
+.ov.bad .btn,.ov.warn .btn,.ov.ok .btn{background:#fff;color:var(--ink);border-color:#fff}
+.ov.bad .btn.sec,.ov.warn .btn.sec,.ov.ok .btn.sec{background:transparent;color:#fff;border-color:#ffffffaa}
+.ov.bad .ovc{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+#pin{z-index:120}
+.pinbox{max-width:340px}
+.dots{display:flex;gap:14px;justify-content:center;margin:14px 0}
+.dots i{width:18px;height:18px;border-radius:50%;border:2px solid var(--pri);display:block}
+.dots i.f{background:var(--pri)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pad button{min-height:62px;font-size:24px;font-weight:700;border:1px solid var(--line);background:#f6f8fb;border-radius:12px;cursor:pointer;color:var(--ink)}
+.pad button:active{background:var(--pri2)}
+.perr{color:var(--bad);font-weight:700;text-align:center;min-height:22px}
+#flash{position:fixed;inset:0;pointer-events:none;z-index:90;opacity:0}
+#flash.f-ok{background:#15803d;animation:fl .4s}
+#flash.f-warn{background:#c96a05;animation:fl .7s}
+@keyframes fl{0%{opacity:.28}100%{opacity:0}}
+#wedge{position:fixed;left:-500px;top:0;width:10px;opacity:0}
+.foot{position:fixed;left:0;right:0;bottom:0;z-index:15;background:#fffffff2;border-top:1px solid var(--line);padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+.foot .row{max-width:560px;margin:0 auto}
+.hidden{display:none!important}
+.demo{background:var(--warnbg);color:var(--warn);font-size:12.5px;font-weight:600;text-align:center;padding:5px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<input id="wedge" inputmode="none" autocomplete="off" autocapitalize="off" spellcheck="false" aria-hidden="true">
+<div id="ov" class="ov"></div>
+<div id="pin" class="ov"></div>
+<div id="flash"></div>
+
+<script>
+
+/* ---------------- helpers ---------------- */
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }));
+const now = () => new Date().toISOString();
+const pad = (n, l) => String(n).padStart(l, '0');
+const sumQ = a => a.reduce((s, b) => s + (+b.qty || 0), 0);
+const uniq = a => [...new Set(a)];
+const today = () => new Date().toLocaleDateString('en-CA');
+const tm = () => new Date().toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const str = v => v == null ? '' : String(v);
+
+let DEV = LS.get('cw_sorter_dev', null);           // { id, station }
+let SES = LS.get('cw_sorter_session', null);       // { name, role, day, at }
+let BAG = LS.get('cw_sorter_bag', null);           // current open bag
+let QUEUE = LS.get('cw_sorter_queue', []);         // writes waiting for the network
+let CUTS = LS.get('cw_sorter_cuts', []);           // jobs loaded in the tracker
+let JOBB = LS.get('cw_sorter_jobs', {});           // cut_id -> bundle list (offline copy)
+let FEED = [];
+let ONLINE = true;
+let OVBUSY = false;
+const saveBag = () => LS.set('cw_sorter_bag', BAG);
+const saveQ = () => LS.set('cw_sorter_queue', QUEUE);
+const saveJobs = () => {
+  const keep = Object.keys(JOBB).slice(-6); if (BAG?.cut_id && !keep.includes(BAG.cut_id)) keep.push(BAG.cut_id);
+  JOBB = Object.fromEntries(keep.filter(k => JOBB[k]).map(k => [k, JOBB[k]]));
+  LS.set('cw_sorter_jobs', JOBB);
+};
+
+/* ---------------- network ---------------- */
+const isNet = e => !navigator.onLine || /fetch|network|timeout|load failed|networkerror|econn|failed to/i.test((e && e.message) || '');
+const withTO = (p, ms = 5000) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+/* once offline, don't wait on the network for every scan: work from the phone's copy until a background check succeeds */
+async function net(fn, ms = 4000, force = false) {
+  if (Store.live && !ONLINE && !force) { const e = new Error('offline'); e.net = true; throw e; }
+  try { const r = await withTO(fn(), ms); setOnline(true); return r; }
+  catch (e) { if (Store.live && isNet(e)) { setOnline(false); e.net = true; } throw e; }
+}
+function setOnline(v) { if (ONLINE !== v) { ONLINE = v; renderNet(); } }
+function renderNet() {
+  const n = $('#net'); if (!n) return;
+  if (!Store.live) { n.className = 'net'; n.textContent = 'DEMO'; return; }
+  n.className = 'net' + (!ONLINE ? ' off' : QUEUE.length ? ' q' : '');
+  n.textContent = !ONLINE ? `OFFLINE${QUEUE.length ? ' · ' + QUEUE.length : ''}` : QUEUE.length ? `Syncing ${QUEUE.length}` : '● Online';
+}
+
+/* ---------------- writes (straight away, or queued when offline) ---------------- */
+const bagTxt = code => code ? code.replace(/^BAG-/, 'BAG ') : '';
+async function exec(op) {
+  switch (op.t) {
+    case 'bag_new': {
+      const ex = await Store.one('cw_bags', { code: op.code });
+      if (ex) return ex.opened_by === op.sorter || !ex.cut_id ? { ok: true } : { conflict: `${bagTxt(op.code)} was already opened by ${ex.opened_by || 'someone else'}` };
+      await Store.insert('cw_bags', [{ code: op.code, bag_no: op.bag_no, cut_id: null, status: 'OPEN', opened_by: op.sorter, station: op.station, device: op.device, created_at: op.at }]);
+      return { ok: true };
+    }
+    case 'bag_take': await Store.update('cw_bags', { code: op.code }, { opened_by: op.sorter, station: op.station, device: op.device }); return { ok: true };
+    case 'bag_lock': {
+      const r = await Store.updateCond('cw_bags', { code: op.code, cut_id: null }, { cut_id: op.cut_id, dyelot: op.dyelot });
+      if (r.length) return { ok: true };
+      const b = await Store.one('cw_bags', { code: op.code });
+      if (b && b.cut_id === op.cut_id && str(b.dyelot) === str(op.dyelot)) return { ok: true };
+      return { conflict: `${bagTxt(op.code)} is already locked to another job or dyelot` };
+    }
+    case 'bundle_in': {
+      const r = await Store.updateCond('cw_bundles', { id: op.id, bag_code: op.from, location: 'CUTTING' }, { bag_code: op.bag, bagged_by: op.sorter, bagged_at: op.at });
+      if (r.length) return { ok: true };
+      const b = await Store.one('cw_bundles', { id: op.id });
+      if (b && b.bag_code === op.bag) return { ok: true };
+      return { conflict: !b ? 'Bundle no longer on the bundle list' : b.location !== 'CUTTING' ? `Bundle #${b.bundle_no} has already been dispatched` : `Bundle #${b.bundle_no} is already in ${bagTxt(b.bag_code)}${b.bagged_by ? ' (' + b.bagged_by + ')' : ''}`, bundle: b };
+    }
+    case 'bundle_out': await Store.updateCond('cw_bundles', { id: op.id, bag_code: op.bag, location: 'CUTTING' }, { bag_code: null, bagged_by: null, bagged_at: null }); return { ok: true };
+    case 'bag_close': await Store.update('cw_bags', { code: op.code }, { status: 'CLOSED', closed_by: op.sorter, closed_at: op.at, bundle_count: op.count, units: op.units }); return { ok: true };
+    case 'bag_reopen': await Store.update('cw_bags', { code: op.code }, { status: 'OPEN', closed_by: null, closed_at: null, opened_by: op.sorter, station: op.station }); return { ok: true };
+    case 'log': await Store.insert('cw_scans', [op.row]); return { ok: true };
+    case 'verify_sup': {
+      const name = await Store.rpc('cw_supervisor_by_pin', { p_pin: op.pin });
+      await Store.insert('cw_scans', [{ id: uid(), created_at: now(), result: name ? 'OVERRIDE_VERIFIED' : 'OVERRIDE_BAD_PIN', detail: `${op.reason} (offline at ${new Date(op.at).toLocaleTimeString('en-ZA')})${name ? '' : ' — the PIN entered was not a supervisor PIN'}`, bag_code: op.bag, sorter: op.sorter, supervisor: name || null, station: op.station, device: op.device }]);
+      return name ? { ok: true } : { conflict: `The supervisor PIN entered offline for "${op.reason}" was WRONG — call the supervisor` };
+    }
+  }
+  return { ok: true };
+}
+async function push(op) {
+  if (QUEUE.length) { QUEUE.push(op); saveQ(); renderNet(); kickSync(); return { queued: true }; }
+  try { return await net(() => exec(op)); }
+  catch (e) { if (e.net) { QUEUE.push(op); saveQ(); renderNet(); return { queued: true }; } throw e; }
+}
+let syncing = false;
+const kickSync = () => setTimeout(sync, 50);
+async function probe() { if (!Store.live || ONLINE) return; try { await net(() => Store.list('cw_parties', {}, { limit: 1 }), 4000, true); } catch (e) {} if (ONLINE) { sync(); refreshNow(); } }
+async function sync() {
+  if (syncing || !QUEUE.length) return;
+  syncing = true; const problems = [];
+  try {
+    while (QUEUE.length) {
+      let r;
+      try { r = await net(() => exec(QUEUE[0]), 6000, true); }
+      catch (e) { if (e.net) break; r = { conflict: e.message }; }
+      QUEUE.shift(); saveQ(); renderNet();
+      if (r && r.conflict) problems.push(r.conflict);
+    }
+  } finally { syncing = false; renderNet(); }
+  if (problems.length) {
+    problems.forEach(p => addFeed('bad', 'Sync: ' + p));
+    if (BAG?.cut_id) await loadJob(BAG.cut_id).catch(() => {});
+    render();
+    await show({ kind: 'bad', title: 'NEEDS ATTENTION', msg: `The phone is back online. Some of what was done offline could not be accepted:<br><br>${problems.map(p => '• ' + esc(p)).join('<br>')}<br><br>Call the supervisor and check the bags involved.` });
+  } else if (BAG?.cut_id && !QUEUE.length) { loadJob(BAG.cut_id).then(render).catch(() => {}); }
+}
+function log(result, detail, x = {}) {
+  const row = { id: uid(), created_at: now(), code: x.code || null, result, detail: detail || null, bag_code: x.bag ?? BAG?.code ?? null, cut_id: x.cut_id ?? null, bundle_no: x.bundle_no ?? null, sorter: SES?.name || null, supervisor: x.supervisor || null, station: DEV?.station || null, device: DEV?.id || null };
+  push({ t: 'log', row }).catch(e => console.warn(e));
+}
+
+/* ---------------- local copies of jobs and bundles ---------------- */
+const cutOf = id => CUTS.find(c => c.id === id);
+const jobTag = c => c ? (c.job_no ? `JOB ${c.job_no}` : `CUT ${c.cut_no}`) : '?';
+const jobLine = c => c ? `${jobTag(c)} · ${c.colour || ''}` : '?';
+async function loadCuts() {
+  const c = await net(() => Store.list('cw_cuts', {}, { order: 'created_at', limit: 3000 }));
+  CUTS = c.map(x => ({ id: x.id, cut_ref: x.cut_ref, style: x.style, colour: x.colour, cut_no: x.cut_no, job_no: x.job_no, po_no: x.po_no, parts: x.parts || [], print_parts: x.print_parts || [] }));
+  LS.set('cw_sorter_cuts', CUTS);
+}
+async function loadJob(cutId) {
+  const bs = await net(() => Store.list('cw_bundles', { cut_id: cutId }, { order: 'bundle_no', asc: true }), 8000);
+  JOBB[cutId] = bs.map(b => ({ id: b.id, code: b.code, cut_id: b.cut_id, bundle_no: b.bundle_no, size: b.size, qty: b.qty, lay_no: b.lay_no, dyelot: b.dyelot, sobar_from: b.sobar_from, sobar_to: b.sobar_to, bag_code: b.bag_code, bagged_by: b.bagged_by, location: b.location }));
+  delete JOBB[cutId]._t; saveJobs();
+  return JOBB[cutId];
+}
+function parseCode(code) { const m = /^(BDL-.+)-P(\d{1,3})$/.exec(code); return m ? { code: m[1], part: +m[2] } : { code, part: null }; }
+const refOf = code => code.slice(4, code.lastIndexOf('-'));
+async function findBundle(code) {
+  const ref = refOf(code);
+  let cut = CUTS.find(c => c.cut_ref === ref);
+  if (!cut) { try { await loadCuts(); } catch (e) { if (!e.net) throw e; return { err: 'OFFLINE', ref }; } cut = CUTS.find(c => c.cut_ref === ref); }
+  if (!cut) return { err: 'NOJOB', ref };
+  let list = JOBB[cut.id];
+  if (!list) { try { list = await loadJob(cut.id); } catch (e) { if (!e.net) throw e; return { err: 'OFFLINE', ref }; } }
+  let b = list.find(x => x.code === code);
+  if (!b) { try { list = await loadJob(cut.id); b = list.find(x => x.code === code); } catch (e) { if (!e.net) throw e; } }
+  if (!b) return { err: 'NOTLISTED', cut, ref };
+  return { cut, b };
+}
+const bagBundles = () => BAG?.cut_id ? (JOBB[BAG.cut_id] || []).filter(b => b.bag_code === BAG.code) : [];
+const bInfo = b => `#${b.bundle_no} · Size ${esc(b.size)} · ${b.qty} units`;
+const layDye = b => [b.lay_no ? 'Lay ' + b.lay_no : '', b.dyelot ? 'Dye ' + b.dyelot : ''].filter(Boolean).join(' · ');
+
+/* ---------------- sound, flash, wake lock ---------------- */
+let AC;
+function beep(k) {
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+    const seq = k === 'ok' ? [[1175, .08]] : k === 'bad' ? [[260, .28], [190, .3], [260, .28], [190, .3]] : k === 'warn' ? [[700, .12], [540, .14]] : [[800, .05]];
+    let t = AC.currentTime;
+    seq.forEach(([f, d]) => { const o = AC.createOscillator(), g = AC.createGain(); o.type = k === 'bad' ? 'square' : 'sine'; o.frequency.value = f; g.gain.value = k === 'bad' ? .22 : .15; o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d); t += d + .03; });
+  } catch (e) {}
+  if (navigator.vibrate) navigator.vibrate(k === 'bad' ? [300, 120, 300, 120, 300] : k === 'warn' ? [150, 80, 150] : k === 'ok' ? 40 : 0);
+}
+function flash(k) { const f = $('#flash'); f.className = ''; void f.offsetWidth; f.className = 'f-' + k; }
+let wakeLock = null;
+async function keepAwake() { try { if ('wakeLock' in navigator && document.visibilityState === 'visible') wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { keepAwake(); focusWedge(); refreshNow(); } });
+
+/* ---------------- overlays ---------------- */
+let ovToken = 0;
+function show({ kind = 'bad', title, msg = '', buttons = [{ label: 'OK', val: true }], auto = 0, sound = true }) {
+  return new Promise(res => {
+    const tok = ++ovToken; OVBUSY = true;
+    const ov = $('#ov'); ov.className = 'ov on ' + kind;
+    ov.innerHTML = `<div class="ovc"><div class="ovt">${title}</div>${msg ? `<div class="ovm">${msg}</div>` : ''}<div class="ovb">${buttons.map((b, i) => `<button class="btn big ${b.cls || ''}" data-i="${i}">${b.label}</button>`).join('')}</div></div>`;
+    if (sound) beep(kind === 'ok' ? 'ok' : kind === 'warn' ? 'warn' : kind === 'info' ? 'info' : 'bad');
+    const done = v => { if (tok !== ovToken) return; ov.className = 'ov'; ov.innerHTML = ''; OVBUSY = false; focusWedge(); res(v); };
+    $$('#ov [data-i]').forEach(el => el.onclick = async () => {
+      const b = buttons[+el.dataset.i];
+      if (b.before) { const r = await b.before(); if (r === false) return; done(r === undefined || r === true ? b.val : r); } else done(b.val);
+    });
+    $$('#ov [data-v]').forEach(el => el.onclick = () => done(el.dataset.v));   // buttons inside the message
+    if (auto) setTimeout(() => done(null), auto);
+  });
+}
+/* numeric PIN pad; verify(pin) returns a value (accepted) or null (wrong) */
+function pinPad({ title, sub = '', verify, len = 4 }) {
+  return new Promise(res => {
+    const P = $('#pin'); let pin = '';
+    P.className = 'ov on info';
+    P.innerHTML = `<div class="ovc pinbox"><div class="ovt" style="font-size:20px">${title}</div>${sub ? `<div class="muted">${sub}</div>` : ''}
+      <div class="dots">${Array.from({ length: 6 }, (_, i) => `<i class="${i >= len ? 'hidden' : ''}"></i>`).join('')}</div><div class="perr" id="perr"></div>
+      <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, '⌫', 0, '✓'].map(k => `<button data-k="${k}">${k}</button>`).join('')}</div>
+      <button class="btn sec big" id="pcancel" style="margin-top:10px">Cancel</button></div>`;
+    const prev = OVBUSY; OVBUSY = true;
+    const dots = () => $$('#pin .dots i').forEach((d, i) => d.classList.toggle('f', i < pin.length));
+    const close = v => { P.className = 'ov'; P.innerHTML = ''; OVBUSY = prev; if (!prev) focusWedge(); document.removeEventListener('keydown', kd); res(v); };
+    const submit = async () => {
+      if (pin.length < 4) return;
+      $('#perr').textContent = 'Checking…';
+      try { const v = await withTO(Promise.resolve(verify(pin)), 5000); if (v) return close(v); $('#perr').textContent = 'Incorrect PIN'; }
+      catch (e) { if (Store.live && isNet(e)) setOnline(false); $('#perr').textContent = Store.live && isNet(e) ? 'No connection — sign-in needs the network' : e.message; }
+      beep('warn'); pin = ''; dots();
+    };
+    const key = async k => {
+      if (k === '⌫') pin = pin.slice(0, -1);
+      else if (k === '✓') return submit();
+      else if (pin.length < 6) { pin += k; $('#perr').textContent = ''; }
+      dots(); if (pin.length === len) submit();
+    };
+    $$('#pin [data-k]').forEach(b => b.onclick = () => key(b.dataset.k));
+    $('#pcancel').onclick = () => close(null);
+    const kd = e => { if (/^\d$/.test(e.key)) key(e.key); else if (e.key === 'Backspace') key('⌫'); else if (e.key === 'Enter') key('✓'); };
+    document.addEventListener('keydown', kd);
+  });
+}
+/* Online the PIN is checked straight away. Offline it is accepted so the table keeps working, and checked
+   as soon as the phone reconnects — a wrong PIN then shows up as an alarm in the tracker. */
+async function supervisorPin(reason) {
+  const v = await pinPad({ title: 'Supervisor PIN', sub: reason + (Store.live && !ONLINE ? '<br><b>Offline — the PIN will be checked when the phone reconnects.</b>' : ''),
+    verify: pin => Store.live && !ONLINE ? 'OFFLINE:' + pin : Store.rpc('cw_supervisor_by_pin', { p_pin: pin }) });
+  if (!v) return null;
+  if (String(v).startsWith('OFFLINE:')) { push({ t: 'verify_sup', pin: v.slice(8), reason, at: now(), sorter: SES.name, station: DEV.station, device: DEV.id, bag: BAG?.code || null }); return 'supervisor (offline PIN — checked later)'; }
+  return v;
+}
+
+/* ---------------- screens ---------------- */
+function renderSetup() {
+  $('#app').innerHTML = `<div class="top"><div class="who"><b>CutTrack Sorter</b><span>Set up this device</span></div></div>
+  <div class="wrap"><div class="card"><h2>Set up this device</h2>
+    <label class="f">Sorting table / station name<input id="stName" placeholder="e.g. Table 3" value="${esc(DEV?.station || '')}"></label>
+    <p class="muted">${Store.live ? 'Connected to the CutTrack database.' : 'Demo mode — data stays on this device. Open the app from the CutTrack website to use the real database.'}</p>
+    <button class="btn big" id="stGo" style="margin-top:8px">Save</button></div></div>`;
+  $('#stGo').onclick = () => {
+    const st = $('#stName').value.trim(); if (!st) return $('#stName').focus();
+    DEV = { id: DEV?.id || uid(), station: st }; LS.set('cw_sorter_dev', DEV);
+    boot();
+  };
+}
+async function renderLogin() {
+  $('#app').innerHTML = `<div class="top"><div class="who"><b>CutTrack Sorter</b><span>${esc(DEV.station)}</span></div><span class="net" id="net"></span><button class="ib" id="setBtn" title="Device settings">⚙</button></div>
+  ${Store.live ? '' : '<div class="demo">Demo mode — PINs: Sorter 1 = 1111, Sorter 2 = 2222, Supervisor = 9999</div>'}
+  <div class="wrap"><div class="card"><h2>Who is sorting?</h2><div id="staff" class="tiles"><p class="muted">Loading…</p></div></div></div>`;
+  renderNet();
+  $('#setBtn').onclick = renderSetup;
+  let staff = LS.get('cw_sorter_staff', []);
+  try { staff = await net(() => Store.rpc('cw_list_staff'), 5000, true); LS.set('cw_sorter_staff', staff); } catch (e) { if (!e.net) { $('#staff').innerHTML = `<p class="muted">Could not load staff: ${esc(e.message)}. Has the database been updated with the latest schema?</p>`; return; } }
+  if (!staff.length) { $('#staff').innerHTML = '<p class="muted">No sorters set up yet. A supervisor adds sorters and PINs in the tracker → Settings → Staff.</p>'; return; }
+  $('#staff').innerHTML = staff.map(s => `<button class="tile" data-n="${esc(s.name)}"><b>${esc(s.name)}</b><span>${s.role === 'SUPERVISOR' ? 'Supervisor' : 'Sorter'}</span></button>`).join('');
+  $$('#staff [data-n]').forEach(t => t.onclick = async () => {
+    const name = t.dataset.n;
+    const role = await pinPad({ title: name, sub: 'Enter your PIN', verify: pin => Store.rpc('cw_verify_pin', { p_name: name, p_pin: pin }) });
+    if (!role) return;
+    SES = { name, role, day: today(), at: Date.now() }; LS.set('cw_sorter_session', SES);
+    log('LOGIN', `${name} signed in at ${DEV.station}`, { bag: null });
+    boot();
+  });
+}
+const sessionOk = () => SES && SES.day === today() && Date.now() - SES.at < 14 * 3600e3;
+
+function renderMain() {
+  $('#app').innerHTML = `<div class="top"><div class="who"><b>${esc(SES.name)}</b><span>${esc(DEV.station)}</span></div><span class="net" id="net"></span><button class="ib" id="menuBtn">☰</button></div>
+  ${Store.live ? '' : '<div class="demo">Demo mode — data only on this device</div>'}
+  <div class="wrap">
+    <div id="bagBox"></div>
+    <div id="last" class="last info">Ready</div>
+    <div id="reader"></div>
+    <div class="card" style="padding:10px"><div class="row"><button class="btn sec" id="camBtn" style="flex:0 0 auto">📷 Camera</button><input id="man" placeholder="Type a code + Enter" autocapitalize="characters" style="flex:1"></div>
+      <div class="muted" style="margin-top:6px">Bluetooth / ring scanners work too — just scan.</div></div>
+    <div id="prog"></div>
+    <div class="card"><h2 style="font-size:15px">Recent scans</h2><div class="feed" id="feed"></div></div>
+  </div>
+  <div class="foot"><div class="row"><button class="btn sec" id="contBtn">Contents</button><button class="btn" id="closeBtn">Close bag</button></div></div>`;
+  $('#menuBtn').onclick = menu;
+  $('#camBtn').onclick = () => Cam.toggle();
+  $('#closeBtn').onclick = () => run(closeBag);
+  $('#contBtn').onclick = () => run(contents);
+  $('#man').addEventListener('keydown', e => { if (e.key === 'Enter') { const v = e.target.value; e.target.value = ''; e.target.blur(); onCode(v); } });
+  render();
+  if (LS.get('cw_sorter_cam', true)) Cam.start();
+  focusWedge(); keepAwake();
+}
+function render() {
+  renderNet();
+  const box = $('#bagBox'); if (!box) return;
+  if (!BAG) {
+    box.innerHTML = `<div class="bag empty"><div class="bn">Scan an empty bag label</div><div class="sub">Then scan each bundle as it goes into the bag.</div></div>`;
+  } else {
+    const c = cutOf(BAG.cut_id), bs = bagBundles();
+    box.innerHTML = `<div class="bag on" id="bagCard"><div class="bn">${esc(bagTxt(BAG.code))}</div>
+      ${c ? `<div class="job">${esc(jobLine(c))}</div><div class="sub">${esc(c.style)}${BAG.dyelot ? ` · <b>DYELOT ${esc(BAG.dyelot)}</b>` : ''}${c.po_no ? ' · PO ' + esc(c.po_no) : ''}</div>` : '<div class="job">Empty bag</div><div class="sub">The first bundle sets the job and dyelot for this bag.</div>'}
+      <div class="cnt"><div><b>${bs.length}</b><span>bundles</span></div><div><b>${sumQ(bs)}</b><span>units</span></div></div></div>`;
+  }
+  $('#closeBtn').disabled = !BAG; $('#contBtn').disabled = !BAG;
+  renderProg(); renderFeed();
+}
+function bump() { const c = $('#bagCard'); if (c) { c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); } }
+function renderProg() {
+  const p = $('#prog'); if (!p) return;
+  if (!BAG?.cut_id || !JOBB[BAG.cut_id]) { p.innerHTML = ''; return; }
+  const all = JOBB[BAG.cut_id], c = cutOf(BAG.cut_id);
+  const groups = new Map();
+  all.forEach(b => { const k = `${str(b.lay_no)}|${str(b.dyelot)}`; if (!groups.has(k)) groups.set(k, { lay: b.lay_no, dye: b.dyelot, n: 0, bagged: 0 }); const g = groups.get(k); g.n++; if (b.bag_code || b.location !== 'CUTTING') g.bagged++; });
+  const left = all.filter(b => !b.bag_code && b.location === 'CUTTING' && str(b.dyelot) === str(BAG.dyelot));
+  const done = all.filter(b => b.bag_code || b.location !== 'CUTTING').length;
+  p.innerHTML = `<div class="card"><div class="row" style="justify-content:space-between"><h2 style="font-size:15px;margin:0">${esc(jobTag(c))} progress</h2><b>${done}/${all.length} bundles bagged</b></div>
+    ${[...groups.values()].map(g => `<div class="lay ${str(g.dye) === str(BAG.dyelot) ? 'cur' : ''}"><span>${g.lay ? 'Lay ' + esc(g.lay) : 'Bundles'}${g.dye ? ' · Dye ' + esc(g.dye) : ''}</span><span>${g.bagged}/${g.n}</span><div class="bar"><i style="width:${g.n ? 100 * g.bagged / g.n : 0}%"></i></div></div>`).join('')}
+    ${left.length ? `<h2 style="font-size:14px;margin:12px 0 6px">Not bagged yet${BAG.dyelot ? ' — dyelot ' + esc(BAG.dyelot) : ''} (${left.length})</h2><div class="chips">${left.slice(0, 80).map(b => `<span class="chip"><b>#${b.bundle_no}</b> ${esc(b.size)}${b.lay_no ? ' · L' + esc(b.lay_no) : ''}</span>`).join('')}${left.length > 80 ? `<span class="chip">+${left.length - 80} more</span>` : ''}</div>` : `<p class="muted" style="margin:10px 0 0">All bundles of ${BAG.dyelot ? 'dyelot ' + esc(BAG.dyelot) : 'this job'} are bagged.</p>`}</div>`;
+}
+function addFeed(kind, msg) { FEED.unshift({ t: tm(), kind, msg }); FEED = FEED.slice(0, 40); renderFeed(); }
+function renderFeed() { const f = $('#feed'); if (f) f.innerHTML = FEED.map(x => `<div class="${x.kind}"><span>${x.t}</span>${esc(x.msg)}</div>`).join('') || '<span class="muted">No scans yet.</span>'; }
+function lastMsg(kind, main, sub = '') { const l = $('#last'); if (!l) return; l.className = 'last ' + kind; l.innerHTML = `${main}${sub ? `<small>${sub}</small>` : ''}`; }
+
+/* ---------------- camera + scanner input ---------------- */
+const Cam = {
+  inst: null, on: false, last: '', lastT: 0,
+  async start() {
+    if (this.on) return;
+    const el = $('#reader'); if (!el || !window.Html5Qrcode) return;
+    el.classList.add('on');
+    try {
+      this.inst = new Html5Qrcode('reader', { verbose: false });
+      await this.inst.start({ facingMode: 'environment' }, { fps: 12, qrbox: (w, h) => { const s = Math.floor(Math.min(w, h) * .72); return { width: s, height: s }; }, aspectRatio: 1.333 }, t => this.hit(t), () => {});
+      this.on = true; LS.set('cw_sorter_cam', true); $('#camBtn').textContent = '■ Camera off';
+    } catch (e) { el.classList.remove('on'); this.inst = null; lastMsg('warn', 'Camera not available', esc(e.message || e) + ' — use a scanner or type the code'); }
+  },
+  async stop() {
+    if (this.inst) { try { await this.inst.stop(); } catch (e) {} try { this.inst.clear(); } catch (e) {} }
+    this.inst = null; this.on = false; $('#reader')?.classList.remove('on'); LS.set('cw_sorter_cam', false);
+    const b = $('#camBtn'); if (b) b.textContent = '📷 Camera';
+  },
+  toggle() { this.on ? this.stop() : this.start(); },
+  hit(t) { t = (t || '').trim(); const n = Date.now(); if (t === this.last && n - this.lastT < 2500) return; this.last = t; this.lastT = n; onCode(t); }
+};
+function focusWedge() { const w = $('#wedge'); if (w && !OVBUSY && document.activeElement?.id !== 'man' && $('#bagBox')) { try { w.focus({ preventScroll: true }); } catch (e) {} } }
+(() => {   // keyboard-wedge scanners type the code and press Enter
+  const w = $('#wedge'); let buf = '';
+  w.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const v = w.value || buf; w.value = ''; buf = ''; if (v) onCode(v); } });
+  document.addEventListener('click', e => { if (!e.target.closest('input,select,textarea,button')) focusWedge(); });
+})();
+
+let scanQ = Promise.resolve();
+function onCode(raw) {
+  const code = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
+  if (!code || OVBUSY || !$('#bagBox')) return;
+  run(() => handle(code));
+}
+function run(fn) { scanQ = scanQ.then(fn).catch(e => { console.error(e); lastMsg('bad', 'Error', esc(e.message || e)); beep('bad'); }); return scanQ; }
+async function handle(code) {
+  if (code.startsWith('BAG-')) return scanBag(code);
+  if (code.startsWith('BDL-')) return scanBundle(code);
+  if (code.startsWith('DN-')) { lastMsg('warn', 'That is a delivery note', 'Scan bag labels and bundle stickers here.'); beep('warn'); return; }
+  log('UNKNOWN', 'Unknown label', { code });
+  await show({ kind: 'bad', title: 'UNKNOWN LABEL', msg: `<b>${esc(code)}</b><br><br>This is not a CutTrack bag or bundle label.` });
+}
+
+/* ---------------- bags ---------------- */
+async function scanBag(code) {
+  if (BAG && BAG.code === code) { lastMsg('info', `${esc(bagTxt(code))} is already your open bag`); beep('info'); return; }
+  const generic = /^BAG-\d{3,8}$/.test(code);
+  let row = null;
+  try { row = await net(() => Store.one('cw_bags', { code })); }
+  catch (e) { if (!e.net) throw e; row = undefined; }   // offline: unknown
+  if (row === null && !generic) { log('UNKNOWN', 'Unknown bag label', { code, bag: code }); return show({ kind: 'bad', title: 'UNKNOWN BAG', msg: `<b>${esc(code)}</b> is not a known bag label.` }); }
+  // what is in that bag already?
+  let inBag = [];
+  if (row && row.cut_id) {
+    if (!cutOf(row.cut_id)) await loadCuts().catch(() => {});
+    if (!JOBB[row.cut_id]) await loadJob(row.cut_id).catch(() => {});
+    inBag = (JOBB[row.cut_id] || []).filter(b => b.bag_code === code);
+    if (inBag.some(b => b.location !== 'CUTTING')) { log('BAG_DISPATCHED', 'Bag already dispatched', { code, bag: code }); return show({ kind: 'bad', title: 'BAG ALREADY DISPATCHED', msg: `${esc(bagTxt(code))} has already left the cutting room. Use a new bag label.` }); }
+  }
+  if (row && row.status === 'CLOSED') {
+    const c = cutOf(row.cut_id);
+    log('BAG_CLOSED', 'Closed bag scanned', { code, bag: code, cut_id: row.cut_id });
+    let sup = null;
+    const r = await show({ kind: 'warn', title: 'BAG IS CLOSED', msg: `<b>${esc(bagTxt(code))}</b> · ${esc(jobLine(c))}${row.dyelot ? ' · Dye ' + esc(row.dyelot) : ''}<br>${row.bundle_count ?? inBag.length} bundles · ${row.units ?? sumQ(inBag)} units · closed by ${esc(row.closed_by || '—')}<br><br>Reopening needs a supervisor.`,
+      buttons: [{ label: 'Reopen (supervisor PIN)', val: 'open', before: async () => { sup = await supervisorPin(`Reopen ${bagTxt(code)}`); return sup ? true : false; } }, { label: 'Leave it closed', val: null, cls: 'sec' }] });
+    if (r !== 'open') return;
+    if (!(await switchAway())) return;
+    await push({ t: 'bag_reopen', code, sorter: SES.name, station: DEV.station });
+    log('BAG_REOPENED', `Reopened by ${SES.name}, approved by ${sup}`, { code, bag: code, cut_id: row.cut_id, supervisor: sup });
+    BAG = { code, bag_no: row.bag_no, cut_id: row.cut_id, dyelot: row.dyelot, status: 'OPEN' }; saveBag();
+    addFeed('warn', `${bagTxt(code)} reopened (approved by ${sup})`); lastMsg('warn', `${esc(bagTxt(code))} reopened`, `Approved by ${esc(sup)}`); flash('warn'); render(); return;
+  }
+  if (row && row.status !== 'CLOSED' && row.opened_by && row.opened_by !== SES.name && inBag.length) {
+    log('BAG_IN_USE', `Bag open by ${row.opened_by}`, { code, bag: code, cut_id: row.cut_id });
+    return show({ kind: 'bad', title: 'BAG IN USE', msg: `<b>${esc(bagTxt(code))}</b> is being packed by <b>${esc(row.opened_by)}</b>${row.station ? ' at ' + esc(row.station) : ''} (${inBag.length} bundles).<br><br>Use your own bag.` });
+  }
+  if (!(await switchAway())) return;
+  const bag_no = row?.bag_no ?? (parseInt(code.replace(/\D/g, '')) || null);
+  if (!row) { await push({ t: 'bag_new', code, bag_no, sorter: SES.name, station: DEV.station, device: DEV.id, at: now() }); }
+  else if (row.opened_by !== SES.name) await push({ t: 'bag_take', code, sorter: SES.name, station: DEV.station, device: DEV.id });
+  BAG = { code, bag_no, cut_id: row?.cut_id || null, dyelot: row?.dyelot ?? null, status: 'OPEN' }; saveBag();
+  log('BAG_OPEN', row ? 'Bag resumed' : 'New bag opened', { code, bag: code, cut_id: BAG.cut_id });
+  addFeed('ok', `${bagTxt(code)} opened`);
+  lastMsg('ok', `${esc(bagTxt(code))} open`, row?.cut_id ? `${esc(jobLine(cutOf(row.cut_id)))} — ${inBag.length} bundles already in it` : 'Scan the first bundle'); beep('ok'); flash('ok');
+  render();
+}
+/* before switching to another bag: an open bag with bundles must be closed first */
+async function switchAway() {
+  if (!BAG) return true;
+  const bs = bagBundles();
+  if (!bs.length) { BAG = null; saveBag(); return true; }
+  const r = await show({ kind: 'info', title: `Close ${esc(bagTxt(BAG.code))} first?`, msg: `Your open bag has <b>${bs.length} bundles · ${sumQ(bs)} units</b>. Only one bag can be open at a time.`, buttons: [{ label: `Close ${esc(bagTxt(BAG.code))} and continue`, val: true }, { label: 'Cancel', val: false, cls: 'sec' }] });
+  if (!r) return false;
+  return doClose(true);
+}
+async function closeBag() {
+  if (!BAG) return;
+  const bs = bagBundles();
+  if (!bs.length) {
+    const r = await show({ kind: 'info', title: 'Bag is empty', msg: `Nothing has been scanned into ${esc(bagTxt(BAG.code))}. Put the label back and release it?`, buttons: [{ label: 'Release bag', val: true }, { label: 'Cancel', val: false, cls: 'sec' }] });
+    if (r) { BAG = null; saveBag(); lastMsg('info', 'Bag released'); render(); }
+    return;
+  }
+  return doClose(false);
+}
+async function doClose(skipAsk) {
+  const bs = bagBundles(), c = cutOf(BAG.cut_id);
+  const bySize = {}; bs.forEach(b => { bySize[b.size] = bySize[b.size] || [0, 0]; bySize[b.size][0]++; bySize[b.size][1] += b.qty; });
+  if (!skipAsk) {
+    const r = await show({ kind: 'info', title: `Close ${esc(bagTxt(BAG.code))}?`,
+      msg: `<b>${esc(jobLine(c))}</b>${BAG.dyelot ? ' · Dye ' + esc(BAG.dyelot) : ''}<br><span style="font-size:24px;font-weight:800">${bs.length} bundles · ${sumQ(bs)} units</span><br>Count the bundles in the bag — does it match?
+        <table><tr><th>Size</th><th>Bundles</th><th>Units</th></tr>${Object.entries(bySize).map(([s, [n, u]]) => `<tr><td>${esc(s)}</td><td>${n}</td><td>${u}</td></tr>`).join('')}</table>`,
+      buttons: [{ label: 'Yes — close bag', val: true, cls: 'ok' }, { label: 'No — check contents', val: 'chk', cls: 'sec' }, { label: 'Back', val: false, cls: 'sec' }] });
+    if (r === 'chk') { await contents(); return false; }
+    if (!r) return false;
+  }
+  await push({ t: 'bag_close', code: BAG.code, sorter: SES.name, at: now(), count: bs.length, units: sumQ(bs) });
+  log('BAG_CLOSED_OK', `${bs.length} bundles · ${sumQ(bs)} units`, { bag: BAG.code, cut_id: BAG.cut_id });
+  addFeed('ok', `${bagTxt(BAG.code)} closed — ${bs.length} bundles · ${sumQ(bs)} units`);
+  lastMsg('ok', `${esc(bagTxt(BAG.code))} closed`, `${bs.length} bundles · ${sumQ(bs)} units — scan the next bag label`); beep('ok'); flash('ok');
+  BAG = null; saveBag(); render();
+  return true;
+}
+async function contents() {
+  while (BAG) {
+    const bs = bagBundles().sort((a, b) => a.bundle_no - b.bundle_no);
+    const r = await show({ kind: 'info', sound: false, title: `${esc(bagTxt(BAG.code))} — ${bs.length} bundles · ${sumQ(bs)} units`,
+      msg: bs.length ? `<table><tr><th>Bundle</th><th>Size</th><th>Units</th><th>Lay / dye</th><th></th></tr>${bs.map(b => `<tr><td><b>#${b.bundle_no}</b></td><td>${esc(b.size)}</td><td>${b.qty}</td><td>${esc(layDye(b))}</td><td><button class="btn sec" data-v="rm:${b.id}" style="min-height:36px;padding:4px 10px">Remove</button></td></tr>`).join('')}</table>` : '<p>No bundles yet.</p>',
+      buttons: [{ label: 'Done', val: null }] });
+    if (!r || !String(r).startsWith('rm:')) return;
+    const b = (JOBB[BAG.cut_id] || []).find(x => x.id === r.slice(3)); if (!b) continue;
+    const ok = await show({ kind: 'info', title: `Take bundle #${b.bundle_no} out?`, msg: `${bInfo(b)}<br>Take it out of the bag, then confirm.`, buttons: [{ label: 'Yes, it is out', val: true }, { label: 'Cancel', val: false, cls: 'sec' }] });
+    if (!ok) continue;
+    await push({ t: 'bundle_out', id: b.id, bag: BAG.code });
+    b.bag_code = null; b.bagged_by = null; saveJobs();
+    log('REMOVED', `Bundle #${b.bundle_no} taken out of the bag`, { code: b.code, cut_id: b.cut_id, bundle_no: b.bundle_no });
+    addFeed('warn', `#${b.bundle_no} taken out of ${bagTxt(BAG.code)}`); render();
+  }
+}
+
+/* ---------------- bundles ---------------- */
+async function scanBundle(raw) {
+  const pc = parseCode(raw), code = pc.code;
+  if (!BAG) { log('NO_BAG', 'Bundle scanned with no open bag', { code: raw, bag: null }); lastMsg('bad', 'Scan a bag label first', 'Then scan the bundles into it.'); beep('bad'); return; }
+  const f = await findBundle(code);
+  if (f.err === 'NOJOB') {
+    log('NO_JOB', `Job ${f.ref} is not loaded in the tracker`, { code: raw });
+    return show({ kind: 'bad', title: 'JOB NOT LOADED', msg: `This bundle belongs to <b>${esc(f.ref)}</b>, which is not loaded in the tracker.<br><br>Put the bundle aside and tell the cutting room clerk to import the bundle list.` });
+  }
+  if (f.err === 'OFFLINE') return show({ kind: 'warn', title: 'NO CONNECTION', msg: `This job is not on this phone yet and there is no connection to download it.<br><br>Put the bundle aside and scan it again when the phone is back online.` });
+  if (f.err === 'NOTLISTED') {
+    log('NOT_ON_LIST', 'Bundle not on the bundle list', { code: raw, cut_id: f.cut.id });
+    return show({ kind: 'bad', title: 'NOT ON BUNDLE LIST', msg: `<b>${esc(code)}</b> is not on the bundle list for ${esc(jobLine(f.cut))}.<br><br>Put it aside — the clerk may need to re-import the latest bundle list.` });
+  }
+  const { cut, b } = f;
+  const bcut = cutOf(BAG.cut_id);
+  // 1. wrong job -> hard stop, supervisor PIN
+  if (BAG.cut_id && b.cut_id !== BAG.cut_id) {
+    log('WRONG_JOB', `${jobLine(cut)} bundle #${b.bundle_no} scanned into bag of ${jobLine(bcut)}`, { code: raw, cut_id: b.cut_id, bundle_no: b.bundle_no });
+    addFeed('bad', `WRONG JOB: #${b.bundle_no} is ${jobLine(cut)}`);
+    lastMsg('bad', 'WRONG JOB — bundle not added', `${esc(jobLine(cut))} #${b.bundle_no}`);
+    let sup = null;
+    await show({ kind: 'bad', title: '⛔ WRONG JOB', msg: `This bundle is<br><b>${esc(jobLine(cut))}</b><br>${esc(cut.style)} · ${bInfo(b)}<br><br>Your bag is<br><b>${esc(jobLine(bcut))}</b><br><br>The bundle was NOT added. Put it aside.<br>A supervisor must enter their PIN to continue.`,
+      buttons: [{ label: 'Supervisor PIN', val: true, before: async () => { sup = await supervisorPin('Wrong-job bundle put aside'); return sup ? true : false; } }] });
+    log('OVERRIDE', `Wrong-job alarm cleared by ${sup} (${jobLine(cut)} #${b.bundle_no})`, { code: raw, cut_id: b.cut_id, bundle_no: b.bundle_no, supervisor: sup });
+    addFeed('warn', `Wrong-job alarm cleared by ${sup}`);
+    return;
+  }
+  // 2. dyelot mixing -> not allowed
+  if (BAG.cut_id && str(b.dyelot) !== str(BAG.dyelot)) {
+    log('WRONG_DYELOT', `Bundle #${b.bundle_no} dyelot ${b.dyelot} into bag of dyelot ${BAG.dyelot}`, { code: raw, cut_id: b.cut_id, bundle_no: b.bundle_no });
+    addFeed('bad', `DYELOT: #${b.bundle_no} is dye ${b.dyelot}, bag is dye ${BAG.dyelot}`);
+    lastMsg('bad', 'DIFFERENT DYELOT — bundle not added', `#${b.bundle_no} is dyelot ${esc(b.dyelot)}`);
+    await show({ kind: 'bad', title: 'DIFFERENT DYELOT', msg: `Bundle <b>#${b.bundle_no}</b> is <b>dyelot ${esc(b.dyelot || '—')}</b>.<br>This bag is <b>dyelot ${esc(BAG.dyelot || '—')}</b>.<br><br>Dyelots may not be mixed in a bag. The bundle was NOT added.<br>Close this bag and use a new bag for dyelot ${esc(b.dyelot || '—')}.`, buttons: [{ label: 'OK — bundle put aside', val: true }] });
+    return;
+  }
+  // 3. already dispatched
+  if (b.location !== 'CUTTING') {
+    log('DISPATCHED', `Bundle #${b.bundle_no} already left cutting (${b.location})`, { code: raw, cut_id: b.cut_id, bundle_no: b.bundle_no });
+    return show({ kind: 'bad', title: 'ALREADY DISPATCHED', msg: `Bundle <b>#${b.bundle_no}</b> (${esc(jobLine(cut))}) has already been dispatched from the cutting room.<br><br>A second bundle with the same label? Put it aside and call the supervisor.` });
+  }
+  // 4. duplicate in this bag
+  if (b.bag_code === BAG.code) { log('DUPLICATE', `Bundle #${b.bundle_no} scanned twice`, { code: raw, cut_id: b.cut_id, bundle_no: b.bundle_no }); lastMsg('info', `#${b.bundle_no} is already in this bag`); beep('info'); return; }
+  // 5. in another bag
+  let from = null;
+  if (b.bag_code) {
+    log('ALREADY_BAGGED', `Bundle #${b.bundle_no} is in ${bagTxt(b.bag_code)}`, { code: raw, cut_id: b.cut_id, bundle_no: b.bundle_no });
+    let sup = null;
+    const r = await show({ kind: 'bad', title: 'ALREADY IN ANOTHER BAG', msg: `Bundle <b>#${b.bundle_no}</b> · Size ${esc(b.size)} is already in <b>${esc(bagTxt(b.bag_code))}</b>${b.bagged_by ? ' (' + esc(b.bagged_by) + ')' : ''}.<br><br>Either the same bundle was scanned twice, or it was moved.`,
+      buttons: [{ label: 'Leave it where it is', val: null }, { label: 'Move it to this bag (supervisor PIN)', val: 'move', cls: 'sec', before: async () => { sup = await supervisorPin(`Move #${b.bundle_no} to ${bagTxt(BAG.code)}`); return sup ? true : false; } }] });
+    if (r !== 'move') return;
+    from = b.bag_code;
+    log('MOVED', `Bundle #${b.bundle_no} moved ${bagTxt(from)} → ${bagTxt(BAG.code)}, approved by ${sup}`, { code: raw, cut_id: b.cut_id, bundle_no: b.bundle_no, supervisor: sup });
+  }
+  // 6. lock an empty bag to this job + dyelot
+  if (!BAG.cut_id) {
+    const r = await push({ t: 'bag_lock', code: BAG.code, cut_id: b.cut_id, dyelot: b.dyelot ?? null });
+    if (r.conflict) { await show({ kind: 'bad', title: 'BAG ALREADY USED', msg: esc(r.conflict) + '<br><br>Use a new bag label.' }); BAG = null; saveBag(); render(); return; }
+    BAG.cut_id = b.cut_id; BAG.dyelot = b.dyelot ?? null; saveBag();
+  }
+  // 7. put it in the bag (only succeeds if nobody else bagged it in the meantime)
+  const at = now();
+  const r = await push({ t: 'bundle_in', id: b.id, code: b.code, from, bag: BAG.code, sorter: SES.name, at });
+  if (r.conflict) {
+    if (r.bundle) Object.assign(b, { bag_code: r.bundle.bag_code, bagged_by: r.bundle.bagged_by, location: r.bundle.location });
+    saveJobs(); render();
+    log('CONFLICT', r.conflict, { code: raw, cut_id: b.cut_id, bundle_no: b.bundle_no });
+    return show({ kind: 'bad', title: 'NOT ADDED', msg: esc(r.conflict) });
+  }
+  b.bag_code = BAG.code; b.bagged_by = SES.name; saveJobs();
+  // part sticker check (amber, bundle still counted)
+  const pp = cut.print_parts || [], pname = pc.part ? ((cut.parts || []).find(p => p.no === pc.part)?.name || 'Part ' + pc.part) : '';
+  const partWarn = pc.part && pp.length && !pp.includes(pc.part);
+  log(from ? 'OK_MOVED' : 'OK', `#${b.bundle_no} · ${b.size} · ${b.qty}${pname ? ' (' + pname + ' sticker)' : ''}${r.queued ? ' — saved offline' : ''}`, { code: raw, cut_id: b.cut_id, bundle_no: b.bundle_no });
+  const bs = bagBundles();
+  if (partWarn) {
+    addFeed('warn', `#${b.bundle_no} added — ${pname} sticker scanned`);
+    lastMsg('warn', `✓ #${b.bundle_no} · Size ${esc(b.size)} · ${b.qty} — but check the part`, `You scanned the <b>${esc(pname)}</b> sticker. ${esc(pname)} does not go to the printer — keep it out of the bag.`);
+    beep('warn'); flash('warn');
+  } else {
+    addFeed('ok', `#${b.bundle_no} · ${b.size} · ${b.qty} → ${bagTxt(BAG.code)}${r.queued ? ' (offline)' : ''}`);
+    lastMsg('ok', `✓ #${b.bundle_no} · Size ${esc(b.size)} · ${b.qty} units`, `${bs.length} bundles · ${sumQ(bs)} units in ${esc(bagTxt(BAG.code))}${r.queued ? ' · saved offline' : ''}`);
+    beep('ok'); flash('ok');
+  }
+  render(); bump();
+}
+
+/* ---------------- menu ---------------- */
+async function menu() {
+  const r = await show({ kind: 'info', sound: false, title: 'Menu', msg: `<span class="muted">${esc(SES.name)} · ${esc(DEV.station)}${QUEUE.length ? ` · ${QUEUE.length} scans waiting to sync` : ''}</span>`,
+    buttons: [{ label: 'Refresh jobs and bundles', val: 'ref' }, { label: Cam.on ? 'Turn camera off' : 'Turn camera on', val: 'cam', cls: 'sec' }, { label: 'Change station / connection', val: 'set', cls: 'sec' }, { label: 'Sign out', val: 'out', cls: 'sec' }, { label: 'Close menu', val: null, cls: 'sec' }] });
+  if (r === 'ref') { await refreshNow(true); lastMsg('info', 'Refreshed'); }
+  if (r === 'cam') Cam.toggle();
+  if (r === 'set') { await Cam.stop(); renderSetup(); }
+  if (r === 'out') {
+    if (BAG && bagBundles().length) { const ok = await show({ kind: 'warn', title: 'Bag still open', msg: `${esc(bagTxt(BAG.code))} has ${bagBundles().length} bundles and is not closed. Close it before signing out?`, buttons: [{ label: 'Close bag and sign out', val: 'close' }, { label: 'Sign out — leave it open', val: 'leave', cls: 'sec' }, { label: 'Cancel', val: null, cls: 'sec' }] }); if (!ok) return; if (ok === 'close' && !(await doClose(false))) return; }
+    log('LOGOUT', `${SES.name} signed out`, { bag: null });
+    await Cam.stop(); SES = null; BAG = null; saveBag(); LS.set('cw_sorter_session', null); boot();
+  }
+}
+async function refreshNow(force) {
+  if (!SES || !$('#bagBox')) return;
+  try {
+    await loadCuts();
+    if (BAG?.cut_id && !QUEUE.length) await loadJob(BAG.cut_id);
+    render();
+  } catch (e) { if (force && !e.net) lastMsg('bad', 'Refresh failed', esc(e.message)); }
+}
+
+/* ---------------- start ---------------- */
+function boot() {
+  if (!DEV) return renderSetup();
+  if (!sessionOk()) return renderLogin();
+  renderMain();
+  refreshNow(); sync();
+}
+setInterval(() => { if (SES && $('#bagBox') && !OVBUSY) { sync(); if (BAG?.cut_id && !QUEUE.length) loadJob(BAG.cut_id).then(renderProg).catch(() => {}); } }, 20000);
+setInterval(() => { if (!ONLINE) probe(); else if (QUEUE.length) sync(); }, 8000);
+window.addEventListener('online', () => probe());
+window.addEventListener('offline', () => setOnline(false));
+window.addEventListener('storage', e => { if (e.key === 'cw_demo' && !Store.live) Store.reload(); });
+Store.init().then(boot);
+</script>
+</body>
+</html>

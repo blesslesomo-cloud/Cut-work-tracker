@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#7a3e00">
+<meta name="mobile-web-app-capable" content="yes">
+<title>CutTrack Dispatch</title>
+<script src="cw-store.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style id="pageStyle">@page{size:A4;margin:12mm}</style>
+<style>
+:root{--bg:#f1efec;--card:#fff;--ink:#17140f;--mut:#655f57;--line:#e2ddd6;--pri:#7a3e00;--pri2:#f6ebdd;--ok:#15803d;--okbg:#e3f5e9;--bad:#c0261a;--badbg:#fde9e7;--warn:#b45309;--warnbg:#fff1dc;--r:12px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);overscroll-behavior:none}
+button{font:inherit}
+.wrap{max-width:720px;margin:0 auto;padding:10px 12px 96px}
+.top{position:sticky;top:0;z-index:20;background:var(--pri);color:#fff;display:flex;align-items:center;gap:10px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top))}
+.top .who{flex:1;min-width:0}
+.top .who b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .who span{font-size:12px;opacity:.85}
+.net{font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:#ffffff26;white-space:nowrap}
+.net.off{background:#c0261a}
+.ib{background:#ffffff1f;border:0;color:#fff;width:42px;height:42px;border-radius:10px;font-size:20px;cursor:pointer}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:2px solid var(--pri);background:var(--pri);color:#fff;padding:12px 16px;border-radius:10px;font-weight:700;cursor:pointer;min-height:48px;text-decoration:none}
+.btn.sec{background:#fff;color:var(--pri)}
+.btn.ok{background:var(--ok);border-color:var(--ok)}
+.btn.bad{background:var(--bad);border-color:var(--bad)}
+.btn.big{min-height:58px;font-size:18px;width:100%}
+.btn.sm{min-height:36px;padding:5px 10px;font-size:14px}
+.btn:disabled{opacity:.45}
+.row{display:flex;gap:8px;align-items:center}
+.row>.btn{flex:1}
+input,select,textarea{font:inherit;padding:12px;border:1px solid var(--line);border-radius:10px;width:100%;background:#fff;color:var(--ink)}
+label.f{display:block;font-size:13px;color:var(--mut);margin-bottom:10px}
+label.f input,label.f select,label.f textarea{margin-top:4px}
+.muted{color:var(--mut);font-size:13px}
+h2{font-size:18px;margin:0 0 10px}
+h3{font-size:14px;margin:12px 0 6px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
+.load{border-radius:var(--r);padding:16px;margin-bottom:10px;color:#fff;background:#5c564f}
+.load.on{background:var(--pri)}
+.load .to{font-size:13px;opacity:.85;text-transform:uppercase;letter-spacing:.5px}
+.load .pr{font-size:28px;font-weight:800;line-height:1.1}
+.load .sub{font-size:14px;opacity:.9;margin-top:4px}
+.load .cnt{display:flex;gap:22px;margin-top:12px}
+.load .cnt div b{display:block;font-size:30px;line-height:1}
+.load .cnt div span{font-size:12px;opacity:.85}
+.load.bump{animation:bump .35s}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.02)}100%{transform:scale(1)}}
+.last{border-radius:var(--r);padding:12px 14px;margin-bottom:10px;font-weight:700;font-size:17px;border:2px solid var(--line);background:#fff;min-height:54px}
+.last.ok{border-color:var(--ok);background:var(--okbg);color:var(--ok)}
+.last.warn{border-color:var(--warn);background:var(--warnbg);color:var(--warn)}
+.last.bad{border-color:var(--bad);background:var(--badbg);color:var(--bad)}
+.last.info{color:var(--mut)}
+.last small{display:block;font-weight:500;font-size:13px;color:var(--ink);opacity:.8}
+#reader{width:100%;border-radius:10px;overflow:hidden;background:#000;display:none;margin-bottom:8px}
+#reader.on{display:block}
+.job{border-left:5px solid var(--pri);padding-left:10px;margin:10px 0}
+.job b.t{font-size:16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:13px;background:#faf8f5}
+.chip.ok{border-color:#a7d8b6;background:var(--okbg)}
+.chip.warn{border-color:#f0c88f;background:var(--warnbg)}
+.bal{font-size:13.5px;margin-top:6px}
+.bal span{display:inline-block;margin-right:12px}
+.bal .w{color:var(--warn);font-weight:700}
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t td,table.t th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.t td.n,table.t th.n{text-align:right}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.tile{background:#fff;border:2px solid var(--line);border-radius:12px;padding:16px 12px;text-align:left;cursor:pointer;min-height:70px}
+.tile b{display:block;font-size:17px}
+.tile span{font-size:12px;color:var(--mut)}
+.ov{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:16px;background:#000a}
+.ov.on{display:flex}
+.ovc{width:100%;max-width:600px;max-height:92vh;overflow:auto;border-radius:16px;padding:20px;background:#fff;color:var(--ink)}
+.ov.bad .ovc{background:var(--bad);color:#fff}
+.ov.warn .ovc{background:#c96a05;color:#fff}
+.ovt{font-size:26px;font-weight:900;line-height:1.1;margin-bottom:10px}
+.ov.info .ovt{font-size:21px}
+.ovm{font-size:16.5px;line-height:1.45}
+.ovm b{font-size:18px}
+.ovb{display:grid;gap:8px;margin-top:18px}
+.ov.bad .btn,.ov.warn .btn{background:#fff;color:var(--ink);border-color:#fff}
+.ov.bad .btn.sec,.ov.warn .btn.sec{background:transparent;color:#fff;border-color:#ffffffaa}
+.ov.bad .ovc{animation:shake .4s}
+.ov.bad table.t td,.ov.bad table.t th,.ov.warn table.t td{border-color:#ffffff55}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.verdict{border-radius:10px;padding:10px 12px;font-weight:700;margin:8px 0}
+.verdict.ok{background:var(--okbg);color:var(--ok)}.verdict.warn{background:var(--warnbg);color:var(--warn)}.verdict.bad{background:var(--badbg);color:var(--bad)}
+#pin{z-index:120}
+.pinbox{max-width:340px}
+.dots{display:flex;gap:14px;justify-content:center;margin:14px 0}
+.dots i{width:18px;height:18px;border-radius:50%;border:2px solid var(--pri);display:block}
+.dots i.f{background:var(--pri)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pad button{min-height:62px;font-size:24px;font-weight:700;border:1px solid var(--line);background:#f7f5f2;border-radius:12px;cursor:pointer;color:var(--ink)}
+.perr{color:var(--bad);font-weight:700;text-align:center;min-height:22px}
+#flash{position:fixed;inset:0;pointer-events:none;z-index:90;opacity:0}
+#flash.f-ok{background:#15803d;animation:fl .4s}
+#flash.f-warn{background:#c96a05;animation:fl .7s}
+@keyframes fl{0%{opacity:.28}100%{opacity:0}}
+#wedge{position:fixed;left:-500px;top:0;width:10px;opacity:0}
+.foot{position:fixed;left:0;right:0;bottom:0;z-index:15;background:#fffffff2;border-top:1px solid var(--line);padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+.foot .row{max-width:720px;margin:0 auto}
+.hidden{display:none!important}
+.demo{background:var(--warnbg);color:var(--warn);font-size:12.5px;font-weight:600;text-align:center;padding:5px}
+/* delivery note */
+#printArea{display:none}
+.doc{font-family:Arial,Helvetica,sans-serif;color:#000;font-size:10pt;background:#fff}
+.doc .dh{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px}
+.doc .dt{font-size:17pt;font-weight:700}
+.doc .dq{width:30mm;text-align:center;font-size:8pt;font-family:monospace}
+.doc .dq svg{width:28mm;height:28mm}
+.doc table{border-collapse:collapse;width:100%;margin:4px 0 10px}
+.doc th,.doc td{border:1px solid #888;padding:3px 5px;font-size:9pt;text-align:left}
+.doc th{background:#eee}
+.doc .kv td{border:0;padding:2px 6px 2px 0;font-size:10pt}
+.doc .tot{font-size:12pt;font-weight:700;margin:6px 0 10px}
+.doc .alert{border:2px solid #000;padding:6px 8px;font-weight:700;margin:8px 0}
+.doc h4{margin:12px 0 3px;font-size:11pt}
+.doc .sig{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:26px;font-size:9pt}
+.doc .sig div{border-top:1px solid #000;padding-top:3px}
+@media print{body{background:#fff}body>*:not(#printArea){display:none!important}#printArea{display:block}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<input id="wedge" inputmode="none" autocomplete="off" autocapitalize="off" spellcheck="false" aria-hidden="true">
+<div id="ov" class="ov"></div>
+<div id="pin" class="ov"></div>
+<div id="flash"></div>
+<div id="printArea"></div>
+
+<script>
+
+/* ---------------- helpers ---------------- */
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }));
+const now = () => new Date().toISOString();
+const pad = (n, l) => String(n).padStart(l, '0');
+const sumQ = a => a.reduce((s, b) => s + (+b.qty || 0), 0);
+const uniq = a => [...new Set(a)];
+const str = v => v == null ? '' : String(v);
+const today = () => new Date().toLocaleDateString('en-CA');
+const tm = () => new Date().toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const fmtD = d => d ? new Date(d).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const bagTxt = code => code ? code.replace(/^BAG-/, 'BAG ') : '';
+const rangeTxt = b => b.sobar_from ? `${b.sobar_from}–${b.sobar_to}` : '';
+
+let DEV = LS.get('cw_dispatch_dev', null);       // { id, station }
+let SES = LS.get('cw_dispatch_session', null);   // { name, role, day, at }
+let LOAD = LS.get('cw_dispatch_load', null);     // load being built
+let CUTS = [], PARTIES = [], FEED = [];
+let ONLINE = true, OVBUSY = false;
+const saveLoad = () => LS.set('cw_dispatch_load', LOAD);
+
+/* ---------------- network: dispatch works online only ---------------- */
+const isNet = e => !navigator.onLine || /fetch|network|timeout|load failed|networkerror|econn|failed to/i.test((e && e.message) || '');
+const withTO = (p, ms = 8000) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+async function net(fn, ms) {
+  try { const r = await withTO(fn(), ms); setOnline(true); return r; }
+  catch (e) { if (Store.live && isNet(e)) { setOnline(false); throw new Error('No connection — dispatch needs the network. Check the Wi-Fi and scan again.'); } throw e; }
+}
+function setOnline(v) { ONLINE = v; renderNet(); }
+function renderNet() { const n = $('#net'); if (!n) return; if (!Store.live) { n.className = 'net'; n.textContent = 'DEMO'; return; } n.className = 'net' + (ONLINE ? '' : ' off'); n.textContent = ONLINE ? '● Online' : 'OFFLINE'; }
+function log(result, detail, x = {}) {
+  Store.insert('cw_scans', [{ code: x.code || null, result, detail: detail || null, bag_code: x.bag || null, cut_id: x.cut_id || null, bundle_no: null, sorter: SES?.name || null, supervisor: x.supervisor || null, station: DEV?.station || 'Dispatch', device: DEV?.id || null }]).catch(e => console.warn(e));
+}
+
+/* ---------------- lookups ---------------- */
+const cutOf = id => CUTS.find(c => c.id === id);
+const jobTag = c => c ? (c.job_no ? `JOB ${c.job_no}` : `CUT ${c.cut_no}`) : '?';
+const jobLine = c => c ? `${jobTag(c)} · ${c.colour || ''}` : '?';
+const printers = () => PARTIES.filter(p => p.kind === 'PRINTER').map(p => p.name);
+const cuttingName = () => PARTIES.find(p => p.kind === 'CUTTING')?.name || 'Cutting Room';
+async function loadBase() {
+  const [c, p] = await Promise.all([net(() => Store.list('cw_cuts', {}, { order: 'created_at', limit: 3000 })), net(() => Store.list('cw_parties', {}, { order: 'name', asc: true }))]);
+  CUTS = c.map(x => ({ ...x, parts: x.parts || [], order_sizes: x.order_sizes || {} })); PARTIES = p;
+}
+async function getCut(id) { let c = cutOf(id); if (!c) { c = await net(() => Store.one('cw_cuts', { id })); if (c) CUTS.push(c); } return c; }
+
+/* ---------------- sound / overlays / PIN ---------------- */
+let AC;
+function beep(k) {
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume();
+    const seq = k === 'ok' ? [[1175, .08]] : k === 'bad' ? [[260, .28], [190, .3], [260, .28], [190, .3]] : k === 'warn' ? [[700, .12], [540, .14]] : [[800, .05]];
+    let t = AC.currentTime;
+    seq.forEach(([f, d]) => { const o = AC.createOscillator(), g = AC.createGain(); o.type = k === 'bad' ? 'square' : 'sine'; o.frequency.value = f; g.gain.value = k === 'bad' ? .22 : .15; o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d); t += d + .03; });
+  } catch (e) {}
+  if (navigator.vibrate) navigator.vibrate(k === 'bad' ? [300, 120, 300, 120, 300] : k === 'warn' ? [150, 80, 150] : k === 'ok' ? 40 : 0);
+}
+function flash(k) { const f = $('#flash'); f.className = ''; void f.offsetWidth; f.className = 'f-' + k; }
+let ovToken = 0;
+function show({ kind = 'bad', title, msg = '', buttons = [{ label: 'OK', val: true }], sound = true, onOpen }) {
+  return new Promise(res => {
+    const tok = ++ovToken; OVBUSY = true;
+    const ov = $('#ov'); ov.className = 'ov on ' + kind;
+    ov.innerHTML = `<div class="ovc"><div class="ovt">${title}</div>${msg ? `<div class="ovm">${msg}</div>` : ''}<div class="ovb">${buttons.map((b, i) => `<button class="btn big ${b.cls || ''}" data-i="${i}">${b.label}</button>`).join('')}</div></div>`;
+    if (sound) beep(kind === 'warn' ? 'warn' : kind === 'info' ? 'info' : kind === 'ok' ? 'ok' : 'bad');
+    const done = v => { if (tok !== ovToken) return; ov.className = 'ov'; ov.innerHTML = ''; OVBUSY = false; focusWedge(); res(v); };
+    $$('#ov [data-i]').forEach(el => el.onclick = async () => {
+      const b = buttons[+el.dataset.i];
+      if (b.check && !b.check()) return;
+      const v = typeof b.val === 'function' ? b.val() : b.val;
+      if (b.before) { const r = await b.before(v); if (r === false) return; }
+      done(v);
+    });
+    $$('#ov [data-v]').forEach(el => el.onclick = () => done(el.dataset.v));
+    if (onOpen) onOpen();
+  });
+}
+function pinPad({ title, sub = '', verify, len = 4 }) {
+  return new Promise(res => {
+    const P = $('#pin'); let pin = '';
+    P.className = 'ov on info';
+    P.innerHTML = `<div class="ovc pinbox"><div class="ovt" style="font-size:20px">${title}</div>${sub ? `<div class="muted">${sub}</div>` : ''}
+      <div class="dots">${Array.from({ length: len }, () => '<i></i>').join('')}</div><div class="perr" id="perr"></div>
+      <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, '⌫', 0, '✓'].map(k => `<button data-k="${k}">${k}</button>`).join('')}</div>
+      <button class="btn sec big" id="pcancel" style="margin-top:10px">Cancel</button></div>`;
+    const prev = OVBUSY; OVBUSY = true;
+    const dots = () => $$('#pin .dots i').forEach((d, i) => d.classList.toggle('f', i < pin.length));
+    const close = v => { P.className = 'ov'; P.innerHTML = ''; OVBUSY = prev; if (!prev) focusWedge(); document.removeEventListener('keydown', kd); res(v); };
+    const submit = async () => {
+      if (pin.length < 4) return;
+      $('#perr').textContent = 'Checking…';
+      try { const v = await withTO(Promise.resolve(verify(pin)), 8000); if (v) return close(v); $('#perr').textContent = 'Incorrect PIN'; }
+      catch (e) { $('#perr').textContent = isNet(e) ? 'No connection' : e.message; }
+      beep('warn'); pin = ''; dots();
+    };
+    const key = k => { if (k === '⌫') pin = pin.slice(0, -1); else if (k === '✓') return submit(); else if (pin.length < len) { pin += k; $('#perr').textContent = ''; } dots(); if (pin.length === len) submit(); };
+    $$('#pin [data-k]').forEach(b => b.onclick = () => key(b.dataset.k));
+    $('#pcancel').onclick = () => close(null);
+    const kd = e => { if (/^\d$/.test(e.key)) key(e.key); else if (e.key === 'Backspace') key('⌫'); else if (e.key === 'Enter') key('✓'); };
+    document.addEventListener('keydown', kd);
+  });
+}
+const supervisorPin = reason => pinPad({ title: 'Supervisor PIN', sub: esc(reason), verify: pin => Store.rpc('cw_supervisor_by_pin', { p_pin: pin }) });
+function approve(sup, what) { if (!LOAD) return; LOAD.approvals = LOAD.approvals || []; LOAD.approvals.push({ sup, what, at: now() }); saveLoad(); }
+
+/* ---------------- screens: setup + login ---------------- */
+function renderSetup() {
+  $('#app').innerHTML = `<div class="top"><div class="who"><b>CutTrack Dispatch</b><span>Set up this device</span></div></div>
+  <div class="wrap"><div class="card"><h2>Set up this device</h2>
+    <label class="f">Station name<input id="stName" placeholder="e.g. Dispatch bay" value="${esc(DEV?.station || 'Dispatch bay')}"></label>
+    <p class="muted">${Store.live ? 'Connected to the CutTrack database.' : 'Demo mode — data stays on this device. Open the app from the CutTrack website to use the real database.'}</p>
+    <button class="btn big" id="stGo" style="margin-top:8px">Save</button></div></div>`;
+  $('#stGo').onclick = () => {
+    const st = $('#stName').value.trim() || 'Dispatch bay';
+    DEV = { id: DEV?.id || uid(), station: st }; LS.set('cw_dispatch_dev', DEV);
+    boot();
+  };
+}
+async function renderLogin() {
+  $('#app').innerHTML = `<div class="top"><div class="who"><b>CutTrack Dispatch</b><span>${esc(DEV.station)}</span></div><span class="net" id="net"></span><button class="ib" id="setBtn">⚙</button></div>
+  ${Store.live ? '' : '<div class="demo">Demo mode — PINs: Dispatcher = 3333, Supervisor = 9999</div>'}
+  <div class="wrap"><div class="card"><h2>Who is dispatching?</h2><div id="staff" class="tiles"><p class="muted">Loading…</p></div></div></div>`;
+  renderNet(); $('#setBtn').onclick = renderSetup;
+  let staff = [];
+  try { staff = (await net(() => Store.rpc('cw_list_staff'))).filter(s => s.role === 'DISPATCHER' || s.role === 'SUPERVISOR'); }
+  catch (e) { $('#staff').innerHTML = `<p class="muted">${esc(e.message)}</p>`; return; }
+  if (!staff.length) { $('#staff').innerHTML = '<p class="muted">No dispatchers set up. Add them in the tracker → Settings → Sorters, dispatchers & supervisors.</p>'; return; }
+  $('#staff').innerHTML = staff.map(s => `<button class="tile" data-n="${esc(s.name)}"><b>${esc(s.name)}</b><span>${s.role === 'SUPERVISOR' ? 'Supervisor' : 'Dispatcher'}</span></button>`).join('');
+  $$('#staff [data-n]').forEach(t => t.onclick = async () => {
+    const name = t.dataset.n;
+    const role = await pinPad({ title: name, sub: 'Enter your PIN', verify: pin => Store.rpc('cw_verify_pin', { p_name: name, p_pin: pin }) });
+    if (!role) return;
+    SES = { name, role, day: today(), at: Date.now() }; LS.set('cw_dispatch_session', SES);
+    log('DSP_LOGIN', `${name} signed in`); boot();
+  });
+}
+const sessionOk = () => SES && SES.day === today() && Date.now() - SES.at < 14 * 3600e3;
+
+/* ---------------- main screen ---------------- */
+function renderMain() {
+  $('#app').innerHTML = `<div class="top"><div class="who"><b>${esc(SES.name)}</b><span>${esc(DEV.station)}</span></div><span class="net" id="net"></span><button class="ib" id="menuBtn">☰</button></div>
+  ${Store.live ? '' : '<div class="demo">Demo mode — data only on this device</div>'}
+  <div class="wrap">
+    <div id="loadBox"></div>
+    <div id="last" class="last info">Ready</div>
+    <div id="reader"></div>
+    <div class="card" style="padding:10px"><div class="row"><button class="btn sec" id="camBtn" style="flex:0 0 auto">📷 Camera</button><input id="man" placeholder="Type a bag code + Enter" autocapitalize="characters" style="flex:1"></div>
+      <div class="muted" style="margin-top:6px">Scan bag labels only — each bag confirms the bundles inside it.</div></div>
+    <div id="jobs"></div>
+    <div id="ready"></div>
+    <div class="card"><h2 style="font-size:15px">Recent scans</h2><div id="feed" class="muted"></div></div>
+  </div>
+  <div class="foot"><div class="row"><button class="btn sec" id="remBtn">Remove bag</button><button class="btn" id="goBtn">Review & dispatch</button></div></div>`;
+  $('#menuBtn').onclick = () => run(menu);
+  $('#camBtn').onclick = () => Cam.toggle();
+  $('#remBtn').onclick = () => run(removeBag);
+  $('#goBtn').onclick = () => run(review);
+  $('#man').addEventListener('keydown', e => { if (e.key === 'Enter') { const v = e.target.value; e.target.value = ''; e.target.blur(); onCode(v); } });
+  render();
+  if (LS.get('cw_dispatch_cam', false)) Cam.start();
+  focusWedge();
+}
+const loadTotals = () => ({ bags: LOAD?.bags.length || 0, n: (LOAD?.bags || []).reduce((s, b) => s + b.n, 0), u: (LOAD?.bags || []).reduce((s, b) => s + b.u, 0) });
+function render() {
+  renderNet();
+  const box = $('#loadBox'); if (!box) return;
+  if (!LOAD) {
+    box.innerHTML = `<div class="load"><div class="pr">No load started</div><div class="sub">Scan the first bag, or start a load for a printer.</div><button class="btn sec" id="startBtn" style="margin-top:12px;background:#fff">Start a load</button></div>`;
+    $('#startBtn').onclick = () => run(() => startLoad());
+  } else {
+    const t = loadTotals();
+    box.innerHTML = `<div class="load on" id="loadCard"><div class="to">Load to</div><div class="pr">${esc(LOAD.printer)}</div>
+      <div class="sub">${[LOAD.vehicle ? 'Vehicle ' + esc(LOAD.vehicle) : '', LOAD.driver ? 'Driver ' + esc(LOAD.driver) : '', 'started ' + new Date(LOAD.started_at).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })].filter(Boolean).join(' · ')}</div>
+      <div class="cnt"><div><b>${t.bags}</b><span>bags</span></div><div><b>${t.n}</b><span>bundles</span></div><div><b>${t.u}</b><span>units</span></div></div></div>`;
+  }
+  $('#remBtn').disabled = !LOAD || !LOAD.bags.length; $('#goBtn').disabled = !LOAD || !LOAD.bags.length;
+  renderJobs(); renderFeed();
+}
+function bump() { const c = $('#loadCard'); if (c) { c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); } }
+function renderJobs() {
+  const el = $('#jobs'); if (!el) return;
+  if (!LOAD || !LOAD.bags.length) { el.innerHTML = ''; return; }
+  const ids = uniq(LOAD.bags.map(b => b.cut_id));
+  el.innerHTML = `<div class="card"><h2 style="font-size:15px">On this load</h2>${ids.map(id => {
+    const c = cutOf(id), bs = LOAD.bags.filter(b => b.cut_id === id);
+    return `<div class="job"><b class="t">${esc(jobLine(c))}</b> <span class="muted">${esc(c?.style || '')}${c?.po_no ? ' · PO ' + esc(c.po_no) : ''}</span>
+      <div class="muted">${bs.length} bags · ${bs.reduce((s, b) => s + b.n, 0)} bundles · ${bs.reduce((s, b) => s + b.u, 0)} units</div>
+      <div class="chips">${bs.map(b => `<span class="chip ok">${esc(bagTxt(b.code))} · ${b.n} bdl${b.dyelot ? ' · D' + esc(b.dyelot) : ''}</span>`).join('')}</div></div>`;
+  }).join('')}</div>`;
+}
+async function renderReady() {
+  const el = $('#ready'); if (!el) return;
+  if (!LOAD) { el.innerHTML = ''; return; }
+  let bags;
+  try { bags = await net(() => Store.list('cw_bags', { status: 'CLOSED' })); } catch (e) { el.innerHTML = ''; return; }
+  const onLoad = new Set(LOAD.bags.map(b => b.code));
+  const mine = bags.filter(b => b.cut_id && !onLoad.has(b.code) && (cutOf(b.cut_id)?.printer || '') === LOAD.printer);
+  const noPr = bags.filter(b => b.cut_id && !onLoad.has(b.code) && !cutOf(b.cut_id)?.printer);
+  const grp = a => { const g = {}; a.forEach(b => (g[b.cut_id] = g[b.cut_id] || []).push(b)); return g; };
+  const block = (title, a) => !a.length ? '' : `<h3>${title}</h3>${Object.entries(grp(a)).map(([id, bs]) => `<div class="job"><b class="t">${esc(jobLine(cutOf(id)))}</b> <span class="muted">${bs.length} bags · ${bs.reduce((s, b) => s + (b.bundle_count || 0), 0)} bundles · ${bs.reduce((s, b) => s + (b.units || 0), 0)} units</span><div class="chips">${bs.sort((a, b) => a.code < b.code ? -1 : 1).map(b => `<span class="chip">${esc(bagTxt(b.code))}${b.dyelot ? ' · D' + esc(b.dyelot) : ''}</span>`).join('')}</div></div>`).join('')}`;
+  el.innerHTML = `<div class="card"><h2 style="font-size:15px">Ready to dispatch — closed bags not on this load</h2>${block(esc(LOAD.printer), mine) + block('No printer set on the job', noPr) || '<p class="muted" style="margin:0">Nothing else waiting for ' + esc(LOAD.printer) + '.</p>'}</div>`;
+}
+function addFeed(kind, msg) { FEED.unshift({ t: tm(), kind, msg }); FEED = FEED.slice(0, 30); renderFeed(); }
+function renderFeed() { const f = $('#feed'); if (f) f.innerHTML = FEED.map(x => `<div style="padding:5px 0;border-bottom:1px solid var(--line);color:${x.kind === 'bad' ? 'var(--bad)' : x.kind === 'warn' ? 'var(--warn)' : 'var(--ink)'}"><span class="muted">${x.t}</span> ${esc(x.msg)}</div>`).join('') || 'No scans yet.'; }
+function lastMsg(kind, main, sub = '') { const l = $('#last'); if (!l) return; l.className = 'last ' + kind; l.innerHTML = `${main}${sub ? `<small>${sub}</small>` : ''}`; }
+
+/* ---------------- camera + scanner ---------------- */
+const Cam = {
+  inst: null, on: false, last: '', lastT: 0,
+  async start() {
+    if (this.on) return; const el = $('#reader'); if (!el || !window.Html5Qrcode) return;
+    el.classList.add('on');
+    try { this.inst = new Html5Qrcode('reader', { verbose: false }); await this.inst.start({ facingMode: 'environment' }, { fps: 12, qrbox: (w, h) => { const s = Math.floor(Math.min(w, h) * .72); return { width: s, height: s }; }, aspectRatio: 1.333 }, t => this.hit(t), () => {}); this.on = true; LS.set('cw_dispatch_cam', true); $('#camBtn').textContent = '■ Camera off'; }
+    catch (e) { el.classList.remove('on'); this.inst = null; lastMsg('warn', 'Camera not available', esc(e.message || e)); }
+  },
+  async stop() { if (this.inst) { try { await this.inst.stop(); } catch (e) {} try { this.inst.clear(); } catch (e) {} } this.inst = null; this.on = false; $('#reader')?.classList.remove('on'); LS.set('cw_dispatch_cam', false); const b = $('#camBtn'); if (b) b.textContent = '📷 Camera'; },
+  toggle() { this.on ? this.stop() : this.start(); },
+  hit(t) { t = (t || '').trim(); const n = Date.now(); if (t === this.last && n - this.lastT < 2500) return; this.last = t; this.lastT = n; onCode(t); }
+};
+function focusWedge() { const w = $('#wedge'); if (w && !OVBUSY && document.activeElement?.id !== 'man' && $('#loadBox')) { try { w.focus({ preventScroll: true }); } catch (e) {} } }
+$('#wedge').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const v = e.target.value; e.target.value = ''; if (v) onCode(v); } });
+document.addEventListener('click', e => { if (!e.target.closest('input,select,textarea,button,a')) focusWedge(); });
+let scanQ = Promise.resolve();
+function onCode(raw) { const code = String(raw || '').trim().toUpperCase().replace(/\s+/g, ''); if (!code || OVBUSY || !$('#loadBox')) return; run(() => handle(code)); }
+function run(fn) { scanQ = scanQ.then(fn).catch(e => { console.error(e); lastMsg('bad', 'Problem', esc(e.message || e)); beep('bad'); }); return scanQ; }
+async function handle(code) {
+  if (code.startsWith('BAG-')) return scanBag(code);
+  if (code.startsWith('BDL-')) { lastMsg('warn', 'That is a bundle sticker', 'At dispatch, scan the BAG label only.'); beep('warn'); return; }
+  if (code.startsWith('DN-')) { lastMsg('info', 'Delivery note', 'Use ☰ → Today\'s loads to reprint or cancel a delivery note.'); beep('info'); return; }
+  log('DSP_UNKNOWN', 'Unknown label', { code });
+  await show({ kind: 'bad', title: 'UNKNOWN LABEL', msg: `<b>${esc(code)}</b> is not a CutTrack bag label.` });
+}
+
+/* ---------------- start a load ---------------- */
+async function startLoad(suggest) {
+  if (!PARTIES.length) await loadBase();
+  const prs = printers();
+  if (!prs.length) return show({ kind: 'bad', title: 'No printers set up', msg: 'Add the printers in the tracker → Settings → Locations.' });
+  const r = await show({ kind: 'info', sound: false, title: 'Start a load',
+    msg: `<label class="f">Printer (destination)<select id="lP">${prs.map(p => `<option ${p === suggest ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></label>
+      <label class="f">Vehicle registration (optional)<input id="lV" autocapitalize="characters"></label>
+      <label class="f">Driver (optional)<input id="lD"></label>`,
+    buttons: [{ label: 'Start load', val: () => ({ printer: $('#lP').value, vehicle: $('#lV').value.trim().toUpperCase(), driver: $('#lD').value.trim() }) }, { label: 'Cancel', val: null, cls: 'sec' }] });
+  if (!r) return false;
+  LOAD = { id: uid(), printer: r.printer, vehicle: r.vehicle, driver: r.driver, started_at: now(), by: SES.name, bags: [], approvals: [] }; saveLoad();
+  log('DSP_LOAD_START', `Load started to ${r.printer}`);
+  addFeed('ok', `Load started to ${r.printer}`); lastMsg('ok', `Load to ${esc(r.printer)} started`, 'Scan the bags'); render(); renderReady();
+  return true;
+}
+
+/* ---------------- scan a bag ---------------- */
+async function scanBag(code) {
+  if (LOAD && LOAD.bags.some(b => b.code === code)) { lastMsg('info', `${esc(bagTxt(code))} is already on this load`); beep('info'); return; }
+  const bag = await net(() => Store.one('cw_bags', { code }));
+  const bad = async (res, title, msg, x = {}) => { log(res, msg.replace(/<br\s*\/?>/g, ' ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(), { code, bag: code, ...x }); addFeed('bad', `${bagTxt(code)}: ${title}`); lastMsg('bad', `${esc(bagTxt(code))} — ${title}`, 'Not added to the load'); await show({ kind: 'bad', title, msg }); };
+  if (!bag) return bad('DSP_UNKNOWN', 'UNUSED BAG LABEL', `<b>${esc(bagTxt(code))}</b> was never used at sorting — nothing was scanned into it.`);
+  if (!bag.cut_id) return bad('DSP_EMPTY', 'EMPTY BAG', `<b>${esc(bagTxt(code))}</b> has no bundles scanned into it.<br><br>Return it to sorting.`);
+  const cut = await getCut(bag.cut_id);
+  if (bag.status === 'DISPATCHED') return bad('DSP_ALREADY', 'ALREADY DISPATCHED', `<b>${esc(bagTxt(code))}</b> (${esc(jobLine(cut))}) already left on <b>${esc(bag.dn_no || '—')}</b>.<br><br>Is this a second bag with the same label? Put it aside and call the supervisor.`, { cut_id: bag.cut_id });
+  if (bag.status !== 'CLOSED') return bad('DSP_OPEN', 'BAG NOT CLOSED', `<b>${esc(bagTxt(code))}</b> · ${esc(jobLine(cut))} is still open${bag.opened_by ? ' — being packed by <b>' + esc(bag.opened_by) + '</b>' : ''}.<br><br>The bundle count has not been confirmed. Send it back to sorting to be closed.`, { cut_id: bag.cut_id });
+  const bs = await net(() => Store.list('cw_bundles', { bag_code: code }));
+  if (!bs.length) return bad('DSP_EMPTY', 'EMPTY BAG', `<b>${esc(bagTxt(code))}</b> was closed but has no bundles in it now.`, { cut_id: bag.cut_id });
+  if (bs.some(b => b.location !== 'CUTTING')) return bad('DSP_ALREADY', 'BUNDLES ALREADY GONE', `Some bundles in <b>${esc(bagTxt(code))}</b> have already been dispatched on another load.`, { cut_id: bag.cut_id });
+  if (!LOAD) { if (!(await startLoad(cut.printer))) return; }
+  const approvals = [];
+  // bag changed after it was closed?
+  if (bag.bundle_count != null && bag.bundle_count !== bs.length) {
+    log('DSP_COUNT_CHANGED', `${bagTxt(code)} closed with ${bag.bundle_count} bundles, now ${bs.length}`, { code, bag: code, cut_id: bag.cut_id });
+    let sup = null;
+    const r = await show({ kind: 'bad', title: 'BAG CHANGED AFTER CLOSING', msg: `<b>${esc(bagTxt(code))}</b> was closed with <b>${bag.bundle_count} bundles · ${bag.units} units</b> by ${esc(bag.closed_by || '—')}.<br>It now holds <b>${bs.length} bundles · ${sumQ(bs)} units</b>.<br><br>Count the bag. A supervisor must approve sending it.`,
+      buttons: [{ label: 'Approve (supervisor PIN)', val: 'ok', before: async () => { sup = await supervisorPin(`Send ${bagTxt(code)} with ${bs.length} bundles`); return !!sup; } }, { label: 'Put it aside', val: null, cls: 'sec' }] });
+    if (r !== 'ok') return;
+    approvals.push({ sup, what: `${bagTxt(code)}: count changed ${bag.bundle_count} → ${bs.length}` });
+  }
+  // right printer?
+  if (cut.printer && cut.printer !== LOAD.printer) {
+    log('DSP_WRONG_PRINTER', `${jobLine(cut)} is for ${cut.printer}, load is to ${LOAD.printer}`, { code, bag: code, cut_id: cut.id });
+    addFeed('bad', `${bagTxt(code)}: WRONG PRINTER (${cut.printer})`);
+    let sup = null;
+    const r = await show({ kind: 'bad', title: '⛔ WRONG PRINTER', msg: `<b>${esc(bagTxt(code))}</b> · ${esc(jobLine(cut))}<br>This job goes to <b>${esc(cut.printer)}</b>.<br>This load is going to <b>${esc(LOAD.printer)}</b>.<br><br>Put the bag back.`,
+      buttons: [{ label: 'Put it back', val: null }, { label: `Send to ${esc(LOAD.printer)} anyway (supervisor PIN)`, val: 'ok', cls: 'sec', before: async () => { sup = await supervisorPin(`Send ${jobTag(cut)} to ${LOAD.printer} instead of ${cut.printer}`); return !!sup; } }] });
+    if (r !== 'ok') return;
+    approvals.push({ sup, what: `${bagTxt(code)}: ${jobTag(cut)} sent to ${LOAD.printer} instead of ${cut.printer}` });
+  }
+  approvals.forEach(a => { approve(a.sup, a.what); log('DSP_OVERRIDE', a.what, { code, bag: code, cut_id: cut.id, supervisor: a.sup }); });
+  LOAD.bags.push({ code, cut_id: cut.id, n: bs.length, u: sumQ(bs), dyelot: bag.dyelot, closed_by: bag.closed_by }); saveLoad();
+  log('DSP_BAG', `${bagTxt(code)} on load to ${LOAD.printer} — ${bs.length} bundles · ${sumQ(bs)} units`, { code, bag: code, cut_id: cut.id });
+  const noPr = !cut.printer;
+  addFeed(noPr ? 'warn' : 'ok', `${bagTxt(code)} · ${jobTag(cut)} · ${bs.length} bundles · ${sumQ(bs)} units`);
+  lastMsg(noPr ? 'warn' : 'ok', `✓ ${esc(bagTxt(code))} · ${bs.length} bundles · ${sumQ(bs)} units`, `${esc(jobLine(cut))}${noPr ? ` — no printer set on this job; it will be set to ${esc(LOAD.printer)}` : ''}`);
+  beep(noPr ? 'warn' : 'ok'); flash(noPr ? 'warn' : 'ok');
+  render(); bump(); renderReady();
+}
+
+/* ---------------- remove a bag (supervisor) ---------------- */
+async function removeBag() {
+  if (!LOAD?.bags.length) return;
+  const r = await show({ kind: 'info', sound: false, title: 'Remove a bag from the load', msg: `<p class="muted">Removing a bag needs a supervisor PIN.</p><table class="t">${LOAD.bags.map(b => `<tr><td><b>${esc(bagTxt(b.code))}</b></td><td>${esc(jobTag(cutOf(b.cut_id)))}</td><td class="n">${b.n} bdl</td><td><button class="btn sec sm" data-v="${esc(b.code)}">Remove</button></td></tr>`).join('')}</table>`, buttons: [{ label: 'Close', val: null, cls: 'sec' }] });
+  if (!r) return;
+  const sup = await supervisorPin(`Remove ${bagTxt(r)} from the load`);
+  if (!sup) return;
+  const b = LOAD.bags.find(x => x.code === r);
+  LOAD.bags = LOAD.bags.filter(x => x.code !== r); approve(sup, `${bagTxt(r)} removed from the load`); saveLoad();
+  log('DSP_REMOVED', `${bagTxt(r)} removed from load to ${LOAD.printer}`, { code: r, bag: r, cut_id: b?.cut_id, supervisor: sup });
+  addFeed('warn', `${bagTxt(r)} removed (approved by ${sup})`); lastMsg('warn', `${esc(bagTxt(r))} removed from the load`, `Approved by ${esc(sup)}`);
+  render(); renderReady();
+}
+
+/* ---------------- review: balance to follow + short check ---------------- */
+async function jobBalance(cutId, onLoadCodes) {
+  const c = await getCut(cutId);
+  const [all, closed, open] = await Promise.all([
+    net(() => Store.list('cw_bundles', { cut_id: cutId })),
+    net(() => Store.list('cw_bags', { cut_id: cutId, status: 'CLOSED' })),
+    net(() => Store.list('cw_bags', { cut_id: cutId, status: 'OPEN' }))
+  ]);
+  const onLoad = all.filter(b => b.location === 'CUTTING' && onLoadCodes.has(b.bag_code));
+  const before = all.filter(b => b.location !== 'CUTTING');
+  const left = all.filter(b => b.location === 'CUTTING' && !onLoadCodes.has(b.bag_code));
+  const readyBags = closed.filter(b => !onLoadCodes.has(b.code));
+  const readyB = left.filter(b => readyBags.some(g => g.code === b.bag_code));
+  const openB = left.filter(b => open.some(g => g.code === b.bag_code));
+  const unbagged = left.filter(b => !b.bag_code);
+  const orderU = Object.values(c.order_sizes || {}).reduce((a, b) => a + b, 0) || c.order_total || 0;
+  const cutU = sumQ(all);
+  // lays only partly on this load
+  const key = b => `${str(b.lay_no)}|${str(b.dyelot)}`;
+  const partLays = uniq(onLoad.map(key)).filter(k => left.some(b => key(b) === k)).map(k => { const [lay, dye] = k.split('|'); const l = left.filter(b => key(b) === k); return { lay, dye, n: l.length, u: sumQ(l) }; });
+  return {
+    cut_id: cutId, job: jobTag(c), colour: c.colour, style: c.style, po: c.po_no || c.order_no || '', printer: c.printer || '',
+    sent_now: { n: onLoad.length, u: sumQ(onLoad) }, sent_before: { n: before.length, u: sumQ(before) },
+    ready_left: { bags: readyBags.map(b => b.code), n: readyB.length, u: sumQ(readyB) },
+    at_sorting: { bags: open.map(b => b.code), n: openB.length, u: sumQ(openB) },
+    unbagged: { n: unbagged.length, u: sumQ(unbagged) },
+    cut_total: { n: all.length, u: cutU }, order_units: orderU, still_to_cut: orderU ? Math.max(0, orderU - cutU) : null,
+    to_follow_units: sumQ(left) + (orderU ? Math.max(0, orderU - cutU) : 0),
+    part_lays: partLays
+  };
+}
+async function review() {
+  if (!LOAD?.bags.length) return;
+  lastMsg('info', 'Checking the balance…');
+  const codes = new Set(LOAD.bags.map(b => b.code));
+  const bal = []; for (const id of uniq(LOAD.bags.map(b => b.cut_id))) bal.push(await jobBalance(id, codes));
+  const left = bal.filter(b => b.ready_left.bags.length);
+  const t = loadTotals();
+  const rows = bal.map(b => `<tr><td><b>${esc(b.job)}</b><br><span class="muted">${esc(b.colour)}</span></td><td class="n"><b>${b.sent_now.n}</b> / ${b.sent_now.u}</td><td class="n">${b.sent_before.u}</td><td class="n">${b.ready_left.u ? `<b style="color:var(--bad)">${b.ready_left.u}</b>` : 0}</td><td class="n">${b.at_sorting.u + b.unbagged.u}</td><td class="n">${b.still_to_cut ?? '–'}</td></tr>`).join('');
+  const partTxt = bal.flatMap(b => b.part_lays.map(l => `${b.job}: Lay ${l.lay || '?'}${l.dye ? ' · Dye ' + l.dye : ''} — ${l.n} bundles / ${l.u} units still at cutting`));
+  const r = await show({ kind: left.length ? 'warn' : 'info', sound: !!left.length, title: `Dispatch to ${esc(LOAD.printer)}?`,
+    msg: `<div style="font-size:22px;font-weight:800;margin-bottom:6px">${t.bags} bags · ${t.n} bundles · ${t.u} units</div>
+      <table class="t"><tr><th>Job</th><th class="n">This load<br>bdl / units</th><th class="n">Sent before</th><th class="n">Ready, left behind</th><th class="n">Still at sorting</th><th class="n">Still to cut</th></tr>${rows}</table>
+      ${left.length ? `<div class="verdict bad" style="background:#fff">Closed bags ready for ${esc(LOAD.printer)} are NOT on this load: ${left.flatMap(b => b.ready_left.bags).map(bagTxt).map(esc).join(', ')}.<br>Sending without them needs a reason and a supervisor PIN.</div>
+        <label class="f" style="color:inherit">Reason<textarea id="shR" rows="2" placeholder="e.g. truck full — next load"></textarea></label>` : ''}
+      ${partTxt.length ? `<div class="verdict warn" style="background:#fff">Partial delivery — balance to follow:<br>${partTxt.map(esc).join('<br>')}</div>` : (bal.some(b => b.to_follow_units) ? '<div class="verdict warn" style="background:#fff">Partial delivery — the balance to follow is printed on the delivery note.</div>' : '<div class="verdict ok">Everything cut for these jobs is on this load.</div>')}`,
+    buttons: [{ label: left.length ? 'Dispatch without them (supervisor PIN)' : 'Confirm dispatch', cls: left.length ? '' : 'ok', val: () => ({ reason: $('#shR')?.value.trim() || '' }),
+      check: () => { if (left.length && !$('#shR').value.trim()) { $('#shR').focus(); $('#shR').style.borderColor = '#c0261a'; return false; } return true; },
+      before: async v => { if (!left.length) return true; const sup = await supervisorPin(`Dispatch with ready bags left behind`); if (!sup) return false; v.sup = sup; return true; } },
+      { label: 'Back', val: null, cls: 'sec' }] });
+  lastMsg('info', 'Ready');
+  if (!r) return;
+  if (r.sup) approve(r.sup, `Dispatched with ready bags left behind: ${r.reason}`);
+  await dispatchLoad(bal, left.length ? r.reason : '', r.sup);
+}
+function mkDN() { const d = new Date(); return `DN-${String(d.getFullYear()).slice(2)}${pad(d.getMonth() + 1, 2)}${pad(d.getDate(), 2)}-${Date.now().toString(36).slice(-5).toUpperCase()}`; }
+async function dispatchLoad(bal, shortReason, shortSup) {
+  const dn = mkDN(), codes = LOAD.bags.map(b => b.code), at = now();
+  // 1. claim the bags — only bags still CLOSED can go
+  const claimed = [];
+  for (const code of codes) {
+    const r = await net(() => Store.updateCond('cw_bags', { code, status: 'CLOSED' }, { status: 'DISPATCHED', dn_no: dn }));
+    if (!r.length) {
+      if (claimed.length) await net(() => Store.updateCond('cw_bags', { code: claimed, dn_no: dn }, { status: 'CLOSED', dn_no: null }));
+      const b = await net(() => Store.one('cw_bags', { code }));
+      LOAD.bags = LOAD.bags.filter(x => x.code !== code); saveLoad(); render();
+      return show({ kind: 'bad', title: 'LOAD NOT DISPATCHED', msg: `<b>${esc(bagTxt(code))}</b> changed while you were loading (now ${esc(b?.status || 'missing')}${b?.dn_no ? ' on ' + esc(b.dn_no) : ''}). It has been taken off this load.<br><br>Check the bag, then review and dispatch again.` });
+    }
+    claimed.push(code);
+  }
+  // 2. bundles inside the bags
+  const bundles = await net(() => Store.list('cw_bundles', { bag_code: codes }));
+  const go = bundles.filter(b => b.location === 'CUTTING');
+  // 3. delivery note
+  const approvals = (LOAD.approvals || []);
+  const supNames = uniq(approvals.map(a => a.sup)).join(', ');
+  const cutsOn = uniq(LOAD.bags.map(b => b.cut_id)).map(cutOf);
+  const [del] = await net(() => Store.insert('cw_deliveries', [{ dn_no: dn, leg: 'CUT_TO_PRINT', from_party: cuttingName(), to_party: LOAD.printer, status: 'DISPATCHED', dispatched_by: SES.name, dispatched_short: !!shortReason, short_reason: shortReason || null,
+    cut_refs: cutsOn.map(c => c.cut_ref).join(', '), bundles_expected: go.length, bundles_sent: go.length, units_sent: sumQ(go), bags_sent: codes.length, wrong_count: 0,
+    vehicle_reg: LOAD.vehicle || null, driver: LOAD.driver || null, approved_by: supNames || null, balance: { jobs: bal, approvals }, source: 'dispatch_app', created_at: at }]));
+  const cutBy = id => cutOf(id) || {};
+  const items = LOAD.bags.map(b => { const c = cutBy(b.cut_id); return { delivery_id: del.id, item_type: 'BAG', code: b.code, cut_id: b.cut_id, cut_ref: c.cut_ref, style: c.style, colour: c.colour, cut_no: c.cut_no, bag_code: b.code, dispatched: true, received: false }; })
+    .concat(go.map(b => { const c = cutBy(b.cut_id); return { delivery_id: del.id, item_type: 'BUNDLE', code: b.code, cut_id: b.cut_id, cut_ref: c.cut_ref, style: c.style, colour: c.colour, cut_no: c.cut_no, bundle_no: b.bundle_no, size: b.size, qty: b.qty, component: b.component || '', bag_code: b.bag_code, lay_no: b.lay_no, dyelot: b.dyelot, sobar_from: b.sobar_from, sobar_to: b.sobar_to, dispatched: true, received: false }; }));
+  await net(() => Store.insert('cw_delivery_items', items));
+  await net(() => Store.updateCond('cw_bundles', { bag_code: codes, location: 'CUTTING' }, { location: 'TRANSIT_PRINT', holder: LOAD.printer }));
+  // jobs with no printer set: set it now
+  for (const c of cutsOn) if (!c.printer) { await net(() => Store.update('cw_cuts', { id: c.id }, { printer: LOAD.printer })); c.printer = LOAD.printer; }
+  log('DSP_DISPATCHED', `${dn} to ${LOAD.printer}: ${codes.length} bags · ${go.length} bundles · ${sumQ(go)} units${shortReason ? ' — ready bags left behind: ' + shortReason : ''}`, { code: dn, supervisor: shortSup || null });
+  addFeed('ok', `${dn} dispatched — ${codes.length} bags · ${go.length} bundles`);
+  const printed = { del, items };
+  LOAD = null; saveLoad(); render();
+  lastMsg('ok', `✓ ${esc(dn)} dispatched`, `${codes.length} bags · ${go.length} bundles · ${sumQ(go)} units`); beep('ok'); flash('ok');
+  const p = await show({ kind: 'info', sound: false, title: `✓ ${esc(dn)}`, msg: `Dispatched to <b>${esc(del.to_party)}</b>: ${codes.length} bags · ${go.length} bundles · ${sumQ(go)} units.<br><br>Print two copies — one travels with the load, one stays at dispatch.`, buttons: [{ label: 'Print delivery note', val: true }, { label: 'Done', val: false, cls: 'sec' }] });
+  if (p) printDN(printed.del, printed.items);
+}
+
+/* ---------------- delivery note ---------------- */
+function qrSvg(text) {
+  const q = qrcode(0, 'M'); q.addData(text); q.make(); const n = q.getModuleCount(); let d = '';
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c},${r}h1v1h-1z`;
+  return `<svg viewBox="-3 -3 ${n + 6} ${n + 6}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect x="-3" y="-3" width="${n + 6}" height="${n + 6}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+}
+function dnHtml(del, items) {
+  const bags = items.filter(i => i.item_type === 'BAG'), bundles = items.filter(i => i.item_type === 'BUNDLE');
+  const jobs = del.balance?.jobs || [];
+  let h = `<div class="doc"><div class="dh"><div><div class="dt">CUT WORK DELIVERY NOTE</div><div style="font-size:12pt">Cutting → Printer</div></div><div class="dq">${qrSvg(del.dn_no)}<div>${esc(del.dn_no)}</div></div></div>
+  <table class="kv"><tr><td><b>DN no:</b> ${esc(del.dn_no)}</td><td><b>Date:</b> ${fmtD(del.created_at)}</td><td><b>Dispatched by:</b> ${esc(del.dispatched_by)}</td></tr>
+  <tr><td><b>From:</b> ${esc(del.from_party)}</td><td><b>To:</b> ${esc(del.to_party)}</td><td><b>Vehicle:</b> ${esc(del.vehicle_reg || '—')}${del.driver ? ' · <b>Driver:</b> ' + esc(del.driver) : ''}</td></tr></table>
+  ${del.status === 'CANCELLED' ? `<div class="alert">CANCELLED ${fmtD(del.cancelled_at)} by ${esc(del.cancelled_by)} — ${esc(del.cancel_reason || '')}</div>` : ''}
+  <div class="tot">Bags: ${bags.length} &nbsp;·&nbsp; Bundles: ${bundles.length} &nbsp;·&nbsp; Units: ${sumQ(bundles)}</div>`;
+  for (const cid of uniq(bundles.map(b => b.cut_id))) {
+    const rows = bundles.filter(b => b.cut_id === cid).sort((a, b) => (a.bag_code > b.bag_code ? 1 : a.bag_code < b.bag_code ? -1 : 0) || a.bundle_no - b.bundle_no);
+    const c = cutOf(cid) || rows[0], bj = jobs.find(j => j.cut_id === cid);
+    const bagsJ = uniq(rows.map(r => r.bag_code));
+    const sizes = {}; rows.forEach(r => { sizes[r.size] = sizes[r.size] || [0, 0]; sizes[r.size][0]++; sizes[r.size][1] += r.qty; });
+    h += `<h4>${esc(c.style)} · ${esc(c.colour)} · ${esc(jobTag(c))}${bj?.po ? ' · PO ' + esc(bj.po) : ''}</h4>
+      <div style="font-size:9pt">Bags: ${bagsJ.map(bagTxt).map(esc).join(', ')} &nbsp;|&nbsp; Sizes: ${Object.entries(sizes).map(([s, [n, u]]) => `<b>${esc(s)}</b> ${n} bdl / ${u} u`).join(' · ')}</div>
+      <table><thead><tr><th>Bag</th><th>Bundle</th><th>Lay</th><th>Dye</th><th>Size</th><th>Range</th><th>Qty</th><th style="width:18mm">Sewing ✓</th></tr></thead><tbody>
+      ${rows.map(r => `<tr><td>${esc(bagTxt(r.bag_code))}</td><td>#${r.bundle_no}</td><td>${esc(r.lay_no || '')}</td><td>${esc(r.dyelot || '')}</td><td>${esc(r.size)}</td><td>${rangeTxt(r)}</td><td>${r.qty}</td><td></td></tr>`).join('')}
+      <tr><td colspan="6"><b>Total ${rows.length} bundles</b></td><td><b>${sumQ(rows)}</b></td><td></td></tr></tbody></table>`;
+  }
+  if (jobs.length) {
+    h += `<h4>Balance to follow</h4><table><thead><tr><th>Job</th><th>Order units</th><th>Cut units</th><th>Sent before</th><th>This load</th><th>Cut, still at cutting</th><th>Still to cut</th></tr></thead><tbody>
+      ${jobs.map(j => `<tr><td>${esc(j.job)} · ${esc(j.colour)}</td><td>${j.order_units || '–'}</td><td>${j.cut_total.u}</td><td>${j.sent_before.u}</td><td>${j.sent_now.u}</td><td>${j.ready_left.u + j.at_sorting.u + j.unbagged.u}</td><td>${j.still_to_cut ?? '–'}</td></tr>`).join('')}</tbody></table>`;
+    const pl = jobs.flatMap(j => j.part_lays.map(l => `${j.job}: Lay ${l.lay || '?'}${l.dye ? ' (dye ' + l.dye + ')' : ''} — ${l.n} bundles / ${l.u} units to follow`));
+    if (pl.length) h += `<div style="font-size:9pt">Part lays on this load: ${pl.map(esc).join('; ')}</div>`;
+  }
+  if (del.dispatched_short) h += `<div class="alert">Ready bags left behind: ${esc(jobs.flatMap(j => j.ready_left.bags).map(bagTxt).join(', '))}. Reason: ${esc(del.short_reason)}</div>`;
+  const ap = del.balance?.approvals || [];
+  if (ap.length) h += `<h4>Supervisor approvals</h4><div style="font-size:9pt">${ap.map(a => `${esc(a.what)} — <b>${esc(a.sup)}</b>`).join('<br>')}</div>`;
+  h += `<div class="sig"><div>Dispatched by</div><div>Driver</div><div>Received by (sewing)</div><div>Date & time</div></div></div>`;
+  return h;
+}
+function printDN(del, items) { $('#printArea').innerHTML = dnHtml(del, items); setTimeout(() => window.print(), 250); }
+
+/* ---------------- today's loads: reprint / cancel ---------------- */
+async function todaysLoads() {
+  const since = new Date(); since.setHours(0, 0, 0, 0);
+  const ds = (await net(() => Store.list('cw_deliveries', { leg: 'CUT_TO_PRINT' }, { order: 'created_at', gte: ['created_at', since.toISOString()] })));
+  const r = await show({ kind: 'info', sound: false, title: "Today's loads",
+    msg: ds.length ? `<table class="t">${ds.map(d => `<tr><td><b>${esc(d.dn_no)}</b><br><span class="muted">${new Date(d.created_at).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })} · ${esc(d.to_party)} · ${d.bags_sent} bags · ${d.bundles_sent} bdl${d.status === 'CANCELLED' ? ' · <b style="color:var(--bad)">CANCELLED</b>' : ''}</span></td><td><button class="btn sec sm" data-v="p:${d.id}">Print</button></td><td>${d.status === 'DISPATCHED' ? `<button class="btn sec sm" data-v="x:${d.id}">Cancel</button>` : ''}</td></tr>`).join('')}</table>` : '<p class="muted">No loads yet today.</p>',
+    buttons: [{ label: 'Close', val: null, cls: 'sec' }] });
+  if (!r) return;
+  const d = ds.find(x => x.id === r.slice(2)); if (!d) return;
+  const items = await net(() => Store.list('cw_delivery_items', { delivery_id: d.id }));
+  if (r.startsWith('p:')) return printDN(d, items);
+  // cancel
+  const codes = items.filter(i => i.item_type === 'BAG').map(i => i.code);
+  const bs = await net(() => Store.list('cw_bundles', { bag_code: codes }));
+  if (bs.some(b => b.location !== 'TRANSIT_PRINT' && b.location !== 'CUTTING')) return show({ kind: 'bad', title: 'CANNOT CANCEL', msg: `Some bundles on ${esc(d.dn_no)} have already been received further down the line.` });
+  const reason = await show({ kind: 'warn', title: `Cancel ${esc(d.dn_no)}?`, msg: `The ${codes.length} bags go back to "ready to dispatch" in the cutting room.<label class="f" style="color:inherit;margin-top:10px">Reason<textarea id="cxR" rows="2"></textarea></label>`,
+    buttons: [{ label: 'Cancel delivery note (supervisor PIN)', val: () => $('#cxR').value.trim(), check: () => !!$('#cxR').value.trim() }, { label: 'Keep it', val: null, cls: 'sec' }] });
+  if (!reason) return;
+  const sup = await supervisorPin(`Cancel ${d.dn_no}`); if (!sup) return;
+  await net(() => Store.updateCond('cw_bundles', { bag_code: codes, location: 'TRANSIT_PRINT' }, { location: 'CUTTING', holder: null }));
+  await net(() => Store.updateCond('cw_bags', { code: codes, dn_no: d.dn_no }, { status: 'CLOSED', dn_no: null }));
+  await net(() => Store.update('cw_deliveries', { id: d.id }, { status: 'CANCELLED', cancelled_by: `${SES.name} (approved by ${sup})`, cancelled_at: now(), cancel_reason: reason }));
+  log('DSP_CANCELLED', `${d.dn_no} cancelled: ${reason}`, { code: d.dn_no, supervisor: sup });
+  addFeed('warn', `${d.dn_no} cancelled (approved by ${sup})`); lastMsg('warn', `${esc(d.dn_no)} cancelled`, `${codes.length} bags back to ready`); renderReady();
+}
+
+/* ---------------- menu ---------------- */
+async function menu() {
+  const r = await show({ kind: 'info', sound: false, title: 'Menu', msg: `<span class="muted">${esc(SES.name)} · ${esc(DEV.station)}</span>`,
+    buttons: [{ label: "Today's loads — reprint / cancel", val: 'loads' }, { label: LOAD ? 'Abandon this load' : 'Start a load', val: 'load', cls: 'sec' }, { label: Cam.on ? 'Turn camera off' : 'Turn camera on', val: 'cam', cls: 'sec' }, { label: 'Refresh', val: 'ref', cls: 'sec' }, { label: 'Change station / connection', val: 'set', cls: 'sec' }, { label: 'Sign out', val: 'out', cls: 'sec' }, { label: 'Close menu', val: null, cls: 'sec' }] });
+  if (r === 'loads') return todaysLoads();
+  if (r === 'load') {
+    if (!LOAD) return startLoad();
+    if (LOAD.bags.length) { const sup = await supervisorPin(`Abandon load to ${LOAD.printer} (${LOAD.bags.length} bags)`); if (!sup) return; log('DSP_ABANDONED', `Load to ${LOAD.printer} with ${LOAD.bags.length} bags abandoned`, { supervisor: sup }); }
+    LOAD = null; saveLoad(); render(); renderReady(); lastMsg('info', 'Load abandoned — the bags stay ready to dispatch');
+  }
+  if (r === 'cam') Cam.toggle();
+  if (r === 'ref') { await loadBase(); render(); renderReady(); }
+  if (r === 'set') { await Cam.stop(); renderSetup(); }
+  if (r === 'out') { log('DSP_LOGOUT', `${SES.name} signed out`); await Cam.stop(); SES = null; LS.set('cw_dispatch_session', null); boot(); }
+}
+
+/* ---------------- start ---------------- */
+async function boot() {
+  if (!DEV) return renderSetup();
+  if (!sessionOk()) return renderLogin();
+  renderMain();
+  try { await loadBase(); render(); renderReady(); } catch (e) { lastMsg('bad', 'Could not load data', esc(e.message)); }
+}
+setInterval(() => { if (SES && $('#loadBox') && !OVBUSY && LOAD) renderReady(); }, 30000);
+window.addEventListener('online', () => setOnline(true));
+window.addEventListener('offline', () => setOnline(false));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') focusWedge(); });
+Store.init().then(boot);
+</script>
+</body>
+</html>
